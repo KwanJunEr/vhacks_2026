@@ -10,62 +10,36 @@ import {
   Users, 
   Zap,
   ArrowUpRight,
-  LucideIcon,
   Timer,
   CheckCircle2,
   Plane,
-  Siren
+  Siren,
+  ShieldCheck,
+  Globe
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-interface StatsCardProps {
-  title: string;
-  value: string;
-  change: string;
-  icon: LucideIcon;
-  color: 'red' | 'blue' | 'yellow' | 'emerald';
-}
-
-function StatsCard({ title, value, change, icon: Icon, color }: StatsCardProps) {
-  // We use direct class logic for light theme clarity
-  const getColors = () => {
-      switch(color) {
-          case 'red': return { icon: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' };
-          case 'blue': return { icon: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' };
-          case 'yellow': return { icon: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' };
-          default: return { icon: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' };
-      }
-  };
-  
-  const colors = getColors();
-
-  return (
-    <div className="glass-panel p-6 rounded-xl border border-slate-200 relative overflow-hidden group hover:border-blue-300 hover:shadow-lg transition-all duration-300 bg-white/70">
-      <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${colors.icon}`}>
-        <Icon className="w-16 h-16" />
-      </div>
-      <div className="flex items-center gap-4 mb-4">
-        <div className={`p-3 rounded-lg ${colors.bg} ${colors.icon} shadow-sm`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        <span className="text-sm font-medium text-slate-500">{title}</span>
-      </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-slate-900">{value}</span>
-        <span className="text-xs font-medium text-emerald-600 flex items-center bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">
-          <ArrowUpRight className="w-3 h-3 mr-1" />
-          {change}
-        </span>
-      </div>
-    </div>
-  );
-}
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function DashboardPage() {
   const [simState, setSimState] = useState<'idle' | 'detecting' | 'alert' | 'deployed'>('idle');
   const [elapsedTime, setElapsedTime] = useState(0);
   const [dronesDeployed, setDronesDeployed] = useState(0);
+  const [totalDrones, setTotalDrones] = useState(0);
+
+  useEffect(() => {
+    const fetchDroneCount = async () => {
+      const { count, error } = await supabase
+        .from('drone_fleet')
+        .select('*', { count: 'exact', head: true });
+      
+      if (!error && count !== null) {
+        setTotalDrones(count);
+      }
+    };
+    fetchDroneCount();
+  }, []);
 
   useEffect(() => {
     // T+2s: Start Detection
@@ -113,34 +87,18 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Control Center</h1>
-          <p className="text-slate-500">Global situational awareness grid</p>
-        </div>
-        <div className="flex gap-2">
-           <button 
-             onClick={() => {
-               setSimState('idle'); 
-               setElapsedTime(0); 
-               setDronesDeployed(0);
-               setTimeout(() => setSimState('detecting'), 500);
-               setTimeout(() => setSimState('alert'), 2500);
-             }}
-             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium rounded-lg transition-colors border border-slate-200"
-           >
-             Replay Simulation
-           </button>
-           <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-blue-500/20 active:scale-95">
-             Deploy Asset
-           </button>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Command Center</h1>
+          <p className="text-slate-500">Southeast Asia Disaster Response Awareness Grid</p>
         </div>
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard title="Active Alerts" value="12" change="+2.4%" icon={AlertTriangle} color="red" />
-        <StatsCard title="Personnel Deployed" value="845" change="+12%" icon={Users} color="blue" />
-        <StatsCard title="Drones In-Flight" value="28" change="+5.1%" icon={Zap} color="yellow" />
-        <StatsCard title="System Uptime" value="99.9%" change="+0.1%" icon={Activity} color="emerald" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <StatsCard title="Disasters (2026)" value="12" change="+2.4%" icon={AlertTriangle} color="red" index={0} />
+        <StatsCard title="Available Personnel" value="845" change="+12%" icon={Users} color="blue" index={1} />
+        <StatsCard title="Available Drones" value={totalDrones} change="+5.1%" icon={Plane} color="indigo" index={2} />
+        <StatsCard title="Active Missions" value="3" change="+1" icon={ShieldCheck} color="yellow" index={3} />
+        <StatsCard title="System Uptime" value="99.9%" change="+0.1%" icon={Activity} color="emerald" index={4} />
       </div>
 
       {/* Main Content Grid */}

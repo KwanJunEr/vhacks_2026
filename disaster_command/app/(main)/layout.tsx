@@ -18,7 +18,8 @@ import {
   User,
   Activity,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -34,6 +35,7 @@ const navigation = [
   { name: "Drone Fleet", href: "/fleet", icon: Plane },
   { name: "Datasets", href: "/dashboard/datasets", icon: Database },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "Computer Vision", href: "/dashboard/computer-vision", icon: Eye },
   { name: "Reports", href: "/dashboard/reports", icon: FileText },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];

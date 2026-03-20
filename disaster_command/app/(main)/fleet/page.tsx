@@ -28,10 +28,10 @@ import { Battery, Drone, Info, Weight, Package, Activity, ShieldCheck, ArrowRigh
 interface DroneData {
   id: string
   drone_name: string
-  model: string
+ 
   battery: number
   status: 'active' | 'inactive' | 'maintenance' | 'deployed'
-  model_brand: string
+
   weight_class: string
   "max_load(kg)": number
   image_url?: string
@@ -122,7 +122,7 @@ const Fleet = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <CardTitle className="text-xl font-bold">{drone.drone_name}</CardTitle>
-                            <CardDescription className="font-medium text-primary/80">{drone.model}</CardDescription>
+                   
                           </div>
                           <div className={`flex items-center gap-1 font-bold ${getBatteryColor(drone.battery)}`}>
                             <Battery className="w-4 h-4" />
@@ -130,12 +130,7 @@ const Fleet = () => {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="flex-grow">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Activity className="w-4 h-4" />
-                          <span>Brand: {drone.model_brand}</span>
-                        </div>
-                      </CardContent>
+                      
                       <CardFooter className="pt-0 pb-4 flex justify-between items-center">
                         <div className="text-xs text-muted-foreground flex items-center gap-1">
                           <Info className="w-3 h-3" />
@@ -155,7 +150,7 @@ const Fleet = () => {
                         </div>
                         <div>
                           <SheetTitle className="text-2xl font-bold">{drone.drone_name}</SheetTitle>
-                          <SheetDescription>{drone.model_brand} - {drone.model}</SheetDescription>
+                         
                         </div>
                       </div>
                       <Badge className={`${getStatusColor(drone.status)} text-white w-fit px-4 py-1 mb-6`}>

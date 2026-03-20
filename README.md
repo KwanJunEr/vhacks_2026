@@ -360,7 +360,7 @@ vhacks_2026 - Varsity Hackathon 2026 Project
 
 ## 👥 Contributors
 
-- Development Team: Penang Farm Food
+- Development Team: Penang Food Farming
 - Lead: Jonas Kwan
 - Team Member: Kok Ngin Hao, Ling Yu Qian
 

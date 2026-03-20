@@ -72,7 +72,7 @@ backend/
 ├── detect_collapsedBuilding.py    # Roboflow WebRTC
 └── src/
     ├── agents/
-    │   ├── command_agent.py       # Gemini planner
+    │   ├── command_agent.py       # Planner
     │   ├── drone_agent.py         # MCP executor
     │   ├── map_agent.py           # Grid manager
     │   ├── victim_detection_agent.py
@@ -118,7 +118,7 @@ return_to_base        (0 units)
 ## 📊 Agent Orchestration
 
 ```
-Gemini (Planning)
+LLM (Planning)
     ↓
 Drone Agent (Execution via MCP)
     ↓

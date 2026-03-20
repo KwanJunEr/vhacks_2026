@@ -19,7 +19,7 @@ AI-powered autonomous disaster response with multi-agent coordination and real-t
 ## 🤖 AI Agents (5 Core)
 
 ### **Planning Layer**
-- **Command Agent** - Gemini LLM orchestrator for mission planning
+- **Command Agent** - Local AI LLM orchestrator for mission planning
 
 ### **Execution Layer**
 - **Drone Agent** - Executes MCP tool calls with resource constraints

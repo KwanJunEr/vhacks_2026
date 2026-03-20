@@ -11,6 +11,7 @@ import {
   Users, 
   ShieldAlert, 
   CheckCircle2, 
+  TrendingUp,
   Activity,
   Zap,
   ChevronRight,
@@ -20,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -54,7 +56,7 @@ const MISSION_REPORT = {
   ]
 };
 
-export function ReportsPanel() {
+export function MissionReports() {
   const reportRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -63,9 +65,8 @@ export function ReportsPanel() {
     setIsGenerating(true);
 
     try {
-      // Capture the element as a canvas
       const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // High resolution
+        scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,

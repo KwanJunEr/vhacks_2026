@@ -38,7 +38,7 @@ export function MissionControlPanel({ isDeployed, onDeploy, logs, onNavigate }: 
   }, [logs]);
 
   return (
-    <div className="w-full md:w-96 border-l border-slate-200 bg-slate-50/30 flex flex-col h-full overflow-hidden">
+    <div className="w-full h-full bg-slate-50/30 flex flex-col overflow-hidden">
       {/* Control Actions - Fixed at top */}
       <div className="p-6 border-b border-slate-200 bg-white shadow-sm shrink-0">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">

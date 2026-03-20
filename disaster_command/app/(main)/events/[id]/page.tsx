@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, use, useRef } from "react";
-import { 
-  MapPin, 
-  Terminal, 
-  Activity, 
-  Plane, 
-  ShieldCheck, 
-  Clock, 
-  ChevronRight, 
+import {
+  MapPin,
+  Terminal,
+  Activity,
+  Plane,
+  ShieldCheck,
+  Clock,
+  ChevronRight,
   AlertTriangle,
   BrainCircuit,
   Waves,
@@ -17,6 +17,8 @@ import {
   Network,
   Settings2,
   FileText,
+  Zap,
+  Cpu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,17 +35,29 @@ import { DroneOps } from "@/components/events/DroneOps";
 import { ReportsPanel } from "@/components/events/ReportsPanel";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 
 // Grid configuration for 7x7
 const ROWS = 7;
 const COLS = 7;
 const TOTAL_CELLS = ROWS * COLS;
 
+interface DroneState {
+  id: string;
+  label: string;
+  pos: number;
+  color: string;
+  status: string;
+  battery: number;
+  targetPath: number[];
+}
+
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("map");
   const [isDeployed, setIsDeployed] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -52,24 +66,54 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [hazardCells, setHazardCells] = useState<Set<number>>(new Set());
   const [survivorSector, setSurvivorSector] = useState<number | null>(null);
   const [survivorFound, setSurvivorFound] = useState(false);
-  
-  // Drones Initial State
-  const [drones, setDrones] = useState([
-    { id: 1, label: 'Alpha-1', pos: 0, color: 'bg-blue-600', status: 'Scanning' },
-    { id: 2, label: 'Alpha-2', pos: 6, color: 'bg-indigo-600', status: 'Scanning' },
-    { id: 3, label: 'Alpha-3', pos: 42, color: 'bg-cyan-600', status: 'Scanning' },
-  ]);
 
-  const addLog = (message: string, type: 'info' | 'warning' | 'success' | 'system' = 'info') => {
+  // Drones Initial State
+  const [drones, setDrones] = useState<DroneState[]>([]);
+
+  const addLog = (message: string, type: 'info' | 'warning' | 'success' | 'system' | 'ai' = 'info', showActions: boolean = false) => {
     setLogs(prev => [
       ...prev,
       {
-        id: Date.now() + Math.random(),
+        id: Math.random().toString(36).substr(2, 9),
         message,
         type,
+        showActions,
         timestamp: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
       }
     ]);
+  };
+
+  // Fetch Drones from Supabase
+  useEffect(() => {
+    const fetchDrones = async () => {
+      const { data, error } = await supabase
+        .from('drone_fleet')
+        .select('drone_name, battery')
+        .limit(4);
+
+      if (!error && data) {
+        const colors = ['bg-blue-600', 'bg-indigo-600', 'bg-cyan-600', 'bg-violet-600'];
+        const droneStates: DroneState[] = data.map((d, i) => ({
+          id: d.drone_name,
+          label: d.drone_name,
+          pos: -1, // Hidden initially
+          color: colors[i % colors.length],
+          status: 'STANDBY',
+          battery: d.battery || 100,
+          targetPath: []
+        }));
+        setDrones(droneStates);
+      }
+    };
+    fetchDrones();
+  }, []);
+
+  // Update battery in Supabase
+  const updateBatteryInDB = async (droneName: string, battery: number) => {
+    await supabase
+      .from('drone_fleet')
+      .update({ battery })
+      .eq('drone_name', droneName);
   };
 
   // Initial Loading Simulation
@@ -80,68 +124,129 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     return () => clearTimeout(timer);
   }, []);
 
-  // Deployment Logic
-  const handleDeploy = () => {
+  // Simulation Sequence
+  const handleDeploy = async () => {
     setIsDeployed(true);
-    addLog("Initiating mission deployment sequence...", "system");
-    
-    // Deployment Steps
-    setTimeout(() => addLog("Reading environmental data: Ranau Seismograph Station 14...", "info"), 1000);
-    setTimeout(() => addLog("Detected secondary tremors (Mag 3.4) in Ranau District.", "warning"), 2000);
-    setTimeout(() => addLog("Confirming sensor connectivity: 98% network stability.", "success"), 3000);
-    setTimeout(() => addLog("Drone Fleet Alpha-1: Launched and entering grid.", "info"), 4000);
-    setTimeout(() => addLog("Scanning terrain for structural anomalies...", "info"), 5000);
+    setIsGenerating(true);
+
+    // 1. Initial Discovery Logs
+    addLog("Reading environmental data: Ranau Seismograph Station 14...", "system");
+    await new Promise(r => setTimeout(r, 1000));
+    addLog("Detected secondary tremors (Mag 3.4) in Ranau District.", "warning");
+    await new Promise(r => setTimeout(r, 1000));
+    addLog("Confirming sensor connectivity: 98% network stability.", "success");
+    await new Promise(r => setTimeout(r, 1000));
+
+    // 2. MCP Discovery
+    addLog("MCP: Executing list_available_drones()...", "system");
+    await new Promise(r => setTimeout(r, 1500));
+    const droneList = drones.map(d => d.label).join(", ");
+    addLog(`Discovery complete: [${droneList}] available via MCP Protocol.`, "success", true);
+
+    // Finish Grid Generation
+    await new Promise(r => setTimeout(r, 1000));
+    setIsGenerating(false);
+
+    // 3. Command Agent Planning
+    addLog("Command Agent: Decomposing mission goals into tactical sectors.", "ai", true);
+    await new Promise(r => setTimeout(r, 1500));
+    addLog("Planning: Sector A1 has high population density. Drone Alpha-1 closest.", "ai");
+    await new Promise(r => setTimeout(r, 1000));
+    addLog("Decision: Assigning Alpha-1 to A1, Alpha-2 to A7, Alpha-3 to G1, Alpha-4 to G7.", "ai", true);
+
+    // 4. Launch Drones
+    const startPositions = [0, 6, 42, 48];
+    setDrones(prev => prev.map((d, i) => ({
+      ...d,
+      pos: startPositions[i] || 0,
+      status: 'SEARCHING'
+    })));
+    addLog("MCP: Broadasting move_to() commands. Swarm entering tactical grid.", "system");
   };
 
-  // Simulation Loop
+  // Movement Loop
   useEffect(() => {
-    if (!isDeployed || activeTab !== 'map' || survivorFound) return;
+    if (!isDeployed || isGenerating || survivorFound) return;
 
-    const interval = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
+    const interval = setInterval(async () => {
+      setDrones(prevDrones => {
+        let changed = false;
+        const nextDrones = prevDrones.map(drone => {
+          if (drone.pos === -1) return drone;
 
-      // Survivor trigger after some time
-      if (elapsedTime > 15 && survivorSector === null) {
-        setSurvivorSector(Math.floor(Math.random() * TOTAL_CELLS));
-        addLog("AI Detection: Heat signature anomaly detected in Sector " + Math.floor(Math.random() * TOTAL_CELLS), "warning");
-      }
+          // 1. Check Battery Low - Return to Base logic
+          if (drone.battery <= 10) {
+            if (drone.pos !== -1) {
+              addLog(`CRITICAL: ${drone.label} battery low (${drone.battery}%). Recalling to base.`, "warning", true);
+              changed = true;
+              return { ...drone, pos: -1, status: 'RECHARGING', battery: 100 };
+            }
+            return drone;
+          }
 
-      // Move Drones
-      setDrones(prevDrones => prevDrones.map(drone => {
-        // Random Walk Logic
-        const moves = [-1, 1, -COLS, COLS]; 
-        const validMoves = moves.filter(move => {
-          const newPos = drone.pos + move;
-          if (newPos < 0 || newPos >= TOTAL_CELLS) return false;
-          if (move === -1 && drone.pos % COLS === 0) return false;
-          if (move === 1 && (drone.pos + 1) % COLS === 0) return false;
-          return true;
+          // 2. Regular Movement
+          const moves = [-1, 1, -COLS, COLS];
+          const validMoves = moves.filter(move => {
+            const newPos = drone.pos + move;
+            if (newPos < 0 || newPos >= TOTAL_CELLS) return false;
+            if (move === -1 && drone.pos % COLS === 0) return false;
+            if (move === 1 && (drone.pos + 1) % COLS === 0) return false;
+            return true;
+          });
+
+          const nextPos = validMoves[Math.floor(Math.random() * validMoves.length)];
+          const finalPos = drone.pos + nextPos;
+          const newBattery = Math.max(0, drone.battery - 10);
+
+          changed = true;
+
+          // Log movement through MCP
+          if (elapsedTime % 3 === 0) {
+            addLog(`MCP: ${drone.label} move_to(${finalPos}). Battery: ${newBattery}%`, "system");
+          }
+
+          // Update DB
+          updateBatteryInDB(drone.id, newBattery);
+
+          // Check for survivor
+          if (survivorSector !== null && finalPos === survivorSector && !survivorFound) {
+            setSurvivorFound(true);
+            addLog(`AI DETECTION: ${drone.label} confirmed survivor in Sector ${finalPos}!`, "success", true);
+            return { ...drone, pos: finalPos, status: 'SURVIVOR CONTACT', battery: newBattery };
+          }
+
+          return { ...drone, pos: finalPos, battery: newBattery };
         });
-        
-        const nextPos = validMoves[Math.floor(Math.random() * validMoves.length)];
-        const finalPos = drone.pos + nextPos;
 
-        // Check for survivor
-        if (survivorSector !== null && finalPos === survivorSector && !survivorFound) {
-          setSurvivorFound(true);
-          addLog("CRITICAL: Survivor found in Sector " + survivorSector + "!", "success");
-          return { ...drone, pos: finalPos, status: 'SURVIVOR CONTACT' };
+        if (changed) {
+          // Update Scanned Map (Stigmergy)
+          setScannedCells(prev => {
+            const next = new Set(prev);
+            nextDrones.forEach(d => { if(d.pos !== -1) next.add(d.pos); });
+            return next;
+          });
         }
 
-        return { ...drone, pos: finalPos };
-      }));
-
-      // Update Scanned Map
-      setScannedCells(prev => {
-        const next = new Set(prev);
-        drones.forEach(d => next.add(d.pos));
-        return next;
+        return nextDrones;
       });
 
-    }, 1000);
+      setElapsedTime(prev => prev + 1);
+
+      // Random Survivor Trigger
+      if (elapsedTime > 8 && survivorSector === null) {
+        const randomSector = Math.floor(Math.random() * TOTAL_CELLS);
+        setSurvivorSector(randomSector);
+        addLog(`AI Reasoning: Thermal signature detected in Sector ${randomSector}. Stigmergy map updated.`, "ai", true);
+      }
+
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, [isDeployed, activeTab, drones, survivorFound, survivorSector, elapsedTime]);
+  }, [isDeployed, isGenerating, survivorFound, survivorSector, elapsedTime, drones]);
+
+  function handleNavigate(tab: string): void {
+    throw new Error("Function not implemented.");
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -198,24 +303,26 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             {isLoading && <LoadingOverlay key="loading" />}
           </AnimatePresence>
 
-          <TabsContent value="map" className="flex-1 m-0 focus-visible:outline-none">
-            <div className="flex flex-col md:flex-row h-full">
-              <DroneGridMap 
-                rows={ROWS} 
-                cols={COLS} 
-                drones={drones} 
-                scannedCells={scannedCells}
-                hazardCells={hazardCells}
-                survivorSector={survivorSector}
-                survivorFound={survivorFound}
-              />
-              <MissionControlPanel 
-                isDeployed={isDeployed}
-                onDeploy={handleDeploy}
-                logs={logs}
-              />
-            </div>
-          </TabsContent>
+         <TabsContent value="map" className="flex-1 m-0 focus-visible:outline-none h-full overflow-hidden">
+  <div className="flex flex-col md:flex-row h-full max-h-full items-stretch overflow-hidden">
+    <DroneGridMap 
+      rows={ROWS} 
+      cols={COLS} 
+      drones={drones} 
+      scannedCells={scannedCells}
+      hazardCells={hazardCells}
+      survivorSector={survivorSector}
+      survivorFound={survivorFound}
+      isGenerating={isGenerating}
+    />
+    <MissionControlPanel 
+      isDeployed={isDeployed}
+      onDeploy={handleDeploy}
+      logs={logs}
+      onNavigate={handleNavigate}
+    />
+  </div>
+</TabsContent>
 
           <TabsContent value="timeline" className="flex-1 m-0 focus-visible:outline-none">
             <AITimeline />
@@ -224,13 +331,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             <ReasoningPanel />
           </TabsContent>
           <TabsContent value="heatmap" className="flex-1 m-0 focus-visible:outline-none">
-            <ConfidenceHeatmap />
+            <ConfidenceHeatmap scannedCells={scannedCells} survivorSector={survivorSector} survivorFound={survivorFound} />
           </TabsContent>
           <TabsContent value="graph" className="flex-1 m-0 focus-visible:outline-none">
             <AgentGraph />
           </TabsContent>
           <TabsContent value="ops" className="flex-1 m-0 focus-visible:outline-none">
-            <DroneOps />
+            <DroneOps drones={drones} />
           </TabsContent>
           <TabsContent value="reports" className="flex-1 m-0 focus-visible:outline-none overflow-y-auto">
             <ReportsPanel />

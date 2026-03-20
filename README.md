@@ -9,7 +9,7 @@ AI-powered autonomous disaster response with multi-agent coordination and real-t
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Planning** | Gemini 1.5 Pro | Strategic mission planning |
+| **Planning** | Local AI LLM (QWEN) | Strategic mission planning |
 | **Vision** | YOLOv8 + Roboflow | Real-time detection |
 | **Drones** | MCP Protocol | Autonomous execution |
 | **Coordination** | Supabase | Agent memory & state |

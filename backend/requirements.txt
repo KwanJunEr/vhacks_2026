@@ -11,3 +11,15 @@ numpy>=1.24.0
 
 # Optional but recommended
 python-dotenv>=1.0.0
+
+fastapi
+uvicorn
+httpx
+pydantic
+pydantic-settings
+google-generativeai
+supabase
+python-dotenv
+asyncio
+python-multipart
+

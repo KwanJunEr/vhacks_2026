@@ -30,6 +30,14 @@ AI-powered autonomous disaster response with multi-agent coordination and real-t
 - **Structural Damage Agent** - Building collapse & damage assessment
 
 ---
+## 🛠️ Technology Stack used in this Project:
+![Technology Stack](disaster_command/public/pictures/Technology%20stack.png)
+
+---
+## ⚙️ AI Agents Components (Multi Agent Coordination):
+![AI Agents Diagram](disaster_command/public/pictures/AI%20Agents%20Components%20Multi-Agent%20Coordination.png)
+
+---
 
 ## 🎯 Detection Models & Scripts
 

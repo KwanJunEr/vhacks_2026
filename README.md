@@ -90,7 +90,7 @@ backend/
 
 Create `.env` file:
 ```env
-GEMINI_API_KEY=your_key
+LOCAL_AI_LLM_ENDPOINT=your_url
 ROBOFLOW_API_KEY=your_key
 ROBOFLOW_MODEL_ID=victim-detection-zz6co/3
 ROBOFLOW_SERVER_URL=https://serverless.roboflow.com

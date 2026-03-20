@@ -289,23 +289,23 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           if (drone.pos === -1) return drone;
 
           // 1. Check Battery Low - Return to Base logic
-          if (drone.battery <= 15 || drone.status === 'RECHARGING') {
+          if (drone.battery <= 0 || drone.status === 'RECHARGING') {
             if (drone.status === 'RECHARGING') {
-              // Simulate recharge time (redeploy when battery reaches 100)
-              const rechargedBattery = Math.min(100, (drone.battery || 0) + 20);
+              // Simulate 3 second recharge (2 intervals of 1500ms = 3000ms)
+              const rechargedBattery = Math.min(100, (drone.battery || 0) + 50);
               if (rechargedBattery === 100) {
                 const droneIdx = prevDrones.indexOf(drone);
                 const startPos = [0, 6, 42, 48][droneIdx] || 0;
-                addLog(`${drone.label}: RECHARGE COMPLETE. Signal established. Redeploying to search grid via Sector ${startPos}.`, "success", true);
+                addLog(`${drone.label}: Recharging complete. System diagnostics nominal. Will proceed to finish scanning to reach 100% grid coverage.`, "success", true);
                 return { ...drone, pos: startPos, status: 'SEARCHING', battery: 100 };
               }
               return { ...drone, battery: rechargedBattery };
             }
 
             if (drone.pos !== -1) {
-              addLog(`CRITICAL: ${drone.label} battery at ${drone.battery}%. Initiating RTH (Return to Home) protocol.`, "warning", true);
+              addLog(`ALERT: ${drone.label} battery depleted. Initiating emergency docking at Base Station.`, "warning");
               changed = true;
-              return { ...drone, pos: -1, status: 'RECHARGING' };
+              return { ...drone, pos: -1, status: 'RECHARGING', battery: 0 };
             }
             return drone;
           }
@@ -347,7 +347,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           // If still no move (surrounded by scanned cells), move towards the closest unscanned cell
           if (!nextMove) {
             let minTargetDist = Infinity;
-            let targetMove = validMoves[0];
+            let targetMove = validMoves[Math.floor(Math.random() * validMoves.length)];
 
             // Find all unscanned cells
             const unscannedCellsArr = Array.from({ length: TOTAL_CELLS })
@@ -355,7 +355,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               .filter(i => !scannedCells.has(i));
 
             if (unscannedCellsArr.length > 0) {
-              // Move towards the first unscanned cell found (simple but effective for systematic coverage)
               const targetCell = unscannedCellsArr[0];
               const tRow = Math.floor(targetCell / COLS);
               const tCol = targetCell % COLS;
@@ -376,7 +375,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
           const finalPos = drone.pos + nextMove;
           const newBattery = Math.max(0, drone.battery - 5); 
-
           changed = true;
 
           // Log movement through MCP

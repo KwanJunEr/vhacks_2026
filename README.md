@@ -112,13 +112,13 @@ SUPABASE_KEY=your_key
 ## 🛠️ MCP Tools (Battery-Constrained)
 
 ```
-list_available_drones  (0 units)
-move_to               (5 units)
-scan_area             (3 units)
-thermal_scan          (4 units)
-capture_image         (2 units)
-get_battery_status    (0 units)
-return_to_base        (0 units)
+list_available_drones  (0 units) No power cost (just queries)
+move_to               (5 units) Most expensive - movement uses significant battery
+scan_area             (3 units)	Moderate cost - area scanning
+thermal_scan          (4 units) High cost - thermal imaging is power-intensive
+capture_image         (2 units) Low-medium cost - quick camera snapshot
+get_battery_status    (0 units) No power cost (just status check)
+return_to_base        (0 units) No power cost or calculated separately based on the distance    
 ```
 
 ---

@@ -1,9 +1,7 @@
 "use client";
 
-import React, { Suspense, useState, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
-import Globe3D from "@/components/Globe3D";
+import React, { useState, useEffect } from "react";
+import CommandCenterMap from "@/components/CommandCenterMap";
 import { 
   Activity, 
   AlertTriangle, 
@@ -11,12 +9,10 @@ import {
   Zap,
   ArrowUpRight,
   LucideIcon,
-  Timer,
   CheckCircle2,
   Plane,
   Siren
 } from "lucide-react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface StatsCardProps {
@@ -144,10 +140,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] min-h-0">
         
         {/* Map / Globe Section */}
-        <div className="lg:col-span-2 glass-panel rounded-xl border border-slate-200 flex flex-col relative overflow-hidden bg-white/70 shadow-sm">
+        <div className="lg:col-span-2 glass-panel rounded-xl border border-slate-200 flex flex-col relative overflow-hidden bg-white/70 shadow-sm min-h-0">
           
           {/* Overlay: Simulation Panel */}
           {simState !== 'idle' && (
@@ -258,33 +254,23 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="absolute top-4 left-4 z-10">
-            <h3 className="text-lg font-semibold text-slate-900">Live Global Feed</h3>
-          </div>
-          <div className="flex-1 bg-gradient-to-br from-slate-50 to-blue-50/30">
-             <Canvas camera={{ position: [0, 0, 3.5], fov: 45 }}>
-                <Suspense fallback={null}>
-                  <ambientLight intensity={1.5} />
-                  <pointLight position={[10, 10, 10]} intensity={2} color="#3b82f6" />
-                  <Globe3D />
-                  <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.5} />
-                </Suspense>
-              </Canvas>
+          <div className="flex-1 min-h-0 bg-gradient-to-br from-slate-50 to-blue-50/30">
+            <CommandCenterMap />
           </div>
         </div>
 
         {/* Right Information Panel */}
-        <div className="lg:col-span-1 glass-panel rounded-xl border border-slate-200 p-6 flex flex-col gap-6 bg-white/70 shadow-sm relative overflow-hidden">
+        <div className="lg:col-span-1 glass-panel rounded-xl border border-slate-200 p-6 flex flex-col gap-6 bg-white/70 shadow-sm relative overflow-hidden min-h-0 lg:h-full">
              
              {simState === 'alert' && (
                  <div className="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none z-0"></div>
              )}
 
-             <div>
+             <div className="min-h-0 flex-1 flex flex-col">
                 <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                     <Activity className="w-5 h-5 text-blue-500" /> Latest Activity
                 </h3>
-                <div className="space-y-4 relative z-10">
+              <div className="space-y-4 relative z-10 overflow-y-auto pr-1">
                     {/* Dynamic Log Item */}
                     {simState !== 'idle' && (
                         <div className="flex gap-3 animate-in slide-in-from-left duration-300">

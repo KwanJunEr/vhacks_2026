@@ -10,6 +10,7 @@ import {
   Plane, 
   BarChart3, 
   FileText, 
+  BookOpenText,
   Settings, 
   Bell, 
   Menu,
@@ -26,6 +27,7 @@ const navigation = [
   { name: "Drone Fleet", href: "/dashboard/fleet", icon: Plane },
   { name: "Datasets", href: "/dashboard/datasets", icon: Database },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { name: "Resources", href: "/dashboard/resources", icon: BookOpenText },
   { name: "Reports", href: "/dashboard/reports", icon: FileText },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];

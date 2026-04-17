@@ -1,36 +1,23 @@
 "use client";
 
 import React, { useState, use, useEffect, useRef } from "react";
+import OpenStreetMapView from "@/components/OpenStreetMapView";
 import { 
   MapPin, 
   Crosshair, 
-  MessageSquare, 
   Terminal, 
   Activity, 
-  Wifi, 
   Battery, 
-  Cpu, 
   Zap, 
   CheckCircle2, 
   AlertTriangle, 
   Move, 
   User, 
   Siren, 
-  Timer, 
-  ArrowRight, 
   BrainCircuit,
   Plane,
   XCircle,
   ShieldCheck,
-  RefreshCw,
-  FileText,
-  BarChart3,
-  TrendingUp,
-  Clock,
-  Download,
-  DollarSign,
-  Users,
-  Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,15 +25,35 @@ import { cn } from "@/lib/utils";
 const ROWS = 7;
 const COLS = 7;
 const TOTAL_CELLS = ROWS * COLS;
+const MANILA_CENTER: [number, number] = [120.9842, 14.5995];
+
+function sectorToLngLat(sector: number): [number, number] {
+   const row = Math.floor(sector / COLS);
+   const col = sector % COLS;
+   const lngStep = 0.01;
+   const latStep = 0.008;
+
+   return [
+      MANILA_CENTER[0] + (col - (COLS - 1) / 2) * lngStep,
+      MANILA_CENTER[1] + ((ROWS - 1) / 2 - row) * latStep,
+   ];
+}
+
+function droneColorToHex(color: string): string {
+   if (color.includes("blue")) return "#2563eb";
+   if (color.includes("indigo")) return "#4f46e5";
+   if (color.includes("cyan")) return "#06b6d4";
+   return "#64748b";
+}
 
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Unwrapping params for Next.js 15+
   const { id } = use(params);
   const [activeTab, setActiveTab] = useState("map");
+   const [mapMode, setMapMode] = useState<"2D" | "3D">("2D");
   
   // Simulation State
   const [scannedCells, setScannedCells] = useState<Set<number>>(new Set());
-  const [hazardCells, setHazardCells] = useState<Set<number>>(new Set());
   
   // Drones Initial State (Adjusted for 7x7 grid: indices 0-48)
   const [drones, setDrones] = useState([
@@ -86,7 +93,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
       // --- SURVIVOR TRIGGER LOGIC (Accelerated Timeline) ---
       // Trigger after ~5 seconds in map view
-      if (!hasTriggeredSurvivor.current && elapsedTime > 6) { 
+      const survivorTriggerTime = mapMode === "3D" ? 20 : 6;
+      if (!hasTriggeredSurvivor.current && elapsedTime > survivorTriggerTime) {
          hasTriggeredSurvivor.current = true;
          // Spawn survivor in front of Drone 1 (Alpha)
          // Drone 1 starts at 0, likely around index 5-10 by now
@@ -106,13 +114,15 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
         // If survivor found, freeze or move to specific spots?
         // For this demo: freeze on discovery to show the "Found" state clearly
-        if (survivorFound) return drone;
+      if (survivorFound && mapMode !== "3D") return drone;
 
         // Check for survivor discovery
         if (survivorSector !== null && drone.pos === survivorSector && !survivorFound) {
            setSurvivorFound(true); 
-           // Dramatic pause then switch to Drones (next in sequence)
-           setTimeout(() => setActiveTab('drones'), 800); 
+           // Keep map visible in 3D so marker movement remains observable.
+           if (mapMode !== "3D") {
+             setTimeout(() => setActiveTab('drones'), 800);
+           }
            return { ...drone, status: 'SURVIVOR CONTACT' };
         }
 
@@ -145,18 +155,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         return next;
       });
 
-      // Spawn Hazards (only if no survivor yet)
-      if (Math.random() < 0.05 && !survivorFound) {
-        const hazardPos = Math.floor(Math.random() * TOTAL_CELLS);
-        if (hazardPos !== survivorSector) {
-           setHazardCells(prev => new Set(prev).add(hazardPos));
-        }
-      }
-
     }, 800); 
 
     return () => clearInterval(interval);
-  }, [activeTab, drones, scannedCells, elapsedTime, survivorFound, survivorSector, aiAnalysisStep, id]);
+   }, [activeTab, drones, scannedCells, elapsedTime, survivorFound, survivorSector, aiAnalysisStep, id, mapMode]);
 
 
   const aiSteps = [
@@ -219,93 +221,150 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 glass-panel rounded-xl overflow-hidden border border-slate-200 relative bg-white shadow-sm flex flex-col">
+      <div className="flex-1 min-h-0 glass-panel rounded-xl overflow-hidden border border-slate-200 relative bg-white shadow-sm flex flex-col">
         
         {/* Tab Content: MAP */}
         {activeTab === 'map' && (
-          <div className="w-full h-full flex flex-col md:flex-row">
-            {/* Interactive Grid Map */}
-            <div className="flex-1 bg-slate-50/50 relative overflow-hidden flex items-center justify-center p-8">
-               
-               {/* Background Grid Lines */}
-               <div className="absolute inset-0 pointer-events-none" 
-                    style={{ 
-                       backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', 
-                       backgroundSize: '24px 24px'
-                    }} 
-               />
-
-               {/* The Grid Container (7x7) */}
-               <div 
-                 className="relative bg-white shadow-2xl rounded-xl border border-slate-200 overflow-hidden"
-                 style={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
-                    gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`,
-                    width: 'min(100%, 500px)', // Slightly smaller for 7x7 to look nice
-                    aspectRatio: '1/1',
-                 }}
-               >
-                  {/* Grid Cells */}
-                  {Array.from({ length: TOTAL_CELLS }).map((_, i) => {
-                     const isScanned = scannedCells.has(i);
-                     const isHazard = hazardCells.has(i);
-                     const activeDrone = drones.find(d => d.pos === i && d.label !== 'Delta'); // Hide Delta on map
-                     const isSurvivor = survivorSector === i;
-                     const showSurvivor = isSurvivor && (hasTriggeredSurvivor.current); 
-
-                     return (
-                        <div 
-                           key={i} 
-                           className={cn(
-                              "border-[0.5px] border-slate-100 transition-all duration-700 relative group flex items-center justify-center",
-                              isHazard ? "bg-red-500/20 border-red-500/30" :
-                              showSurvivor ? "bg-amber-400/30 border-amber-500/50 animate-pulse" :
-                              isScanned ? "bg-blue-500/10 border-blue-500/20" : 
-                              "bg-transparent hover:bg-slate-50"
-                           )}
-                           title={`Sector ${i}`}
-                        >
-                           {/* Drone Icon */}
-                           {activeDrone && (
-                              <div className="absolute inset-0 flex items-center justify-center z-20">
-                                 <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-transform duration-500", activeDrone.color)}>
-                                     <Crosshair className="w-5 h-5 text-white animate-spin-slow" />
-                                 </div>
-                                 <div className={cn("absolute inset-0 rounded-full animate-ping opacity-75", activeDrone.color)} />
-                              </div>
-                           )}
-
-                           {/* Survivor */}
-                           {showSurvivor && !activeDrone && (
-                              <div className="absolute inset-0 flex items-center justify-center z-30 animate-bounce">
-                                 <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shadow-lg border-2 border-white ring-2 ring-amber-300">
-                                     <User className="w-6 h-6 text-white" />
-                                 </div>
-                              </div>
-                           )}
-
-                           {/* Hazard */}
-                           {isHazard && !activeDrone && !showSurvivor && (
-                              <div className="absolute inset-0 flex items-center justify-center animate-pulse z-10">
-                                 <AlertTriangle className="w-6 h-6 text-red-600 drop-shadow-sm" />
-                              </div>
-                           )}
-                           
-                           {/* Scanned Checkmark */}
-                           {isScanned && !activeDrone && !isHazard && !showSurvivor && (
-                              <div className="opacity-20">
-                                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                              </div>
-                           )}
+          <div className="w-full h-full min-h-0 flex flex-col md:flex-row md:items-stretch">
+                  <div className="flex-1 min-h-[420px] md:min-h-0 bg-slate-50/50 relative overflow-hidden flex items-center justify-center p-8 pt-20 md:pt-24">
+                     <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-3">
+                        <div className="w-full max-w-xs rounded-xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm backdrop-blur-sm">
+                           <div className="mb-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              <span>Tactical Coverage</span>
+                              <span>{Math.round((scannedCells.size / TOTAL_CELLS) * 100)}%</span>
+                           </div>
+                           <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                              <div
+                                 className="h-full bg-blue-600 transition-all duration-500"
+                                 style={{ width: `${(scannedCells.size / TOTAL_CELLS) * 100}%` }}
+                              />
+                           </div>
                         </div>
-                     );
-                  })}
-               </div>
-            </div>
+
+                        <div className="inline-flex rounded-lg border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur-sm">
+                           <button
+                              type="button"
+                              onClick={() => setMapMode("2D")}
+                              className={cn(
+                                 "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                                 mapMode === "2D"
+                                    ? "bg-blue-600 text-white"
+                                    : "text-slate-700 hover:bg-slate-100",
+                              )}
+                           >
+                              2D
+                           </button>
+                           <button
+                              type="button"
+                              onClick={() => setMapMode("3D")}
+                              className={cn(
+                                 "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                                 mapMode === "3D"
+                                    ? "bg-blue-600 text-white"
+                                    : "text-slate-700 hover:bg-slate-100",
+                              )}
+                           >
+                              3D
+                           </button>
+                        </div>
+                     </div>
+
+                     <div className="absolute right-4 top-16 z-20 rounded-full border border-slate-200 bg-slate-900/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
+                        Active Fleet: 3
+                     </div>
+
+                     {mapMode === "2D" ? (
+                        <>
+                           <div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                 backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                                 backgroundSize: '24px 24px',
+                              }}
+                           />
+
+                           <div
+                              className="relative bg-white shadow-2xl rounded-xl border border-slate-200 overflow-hidden"
+                              style={{
+                                 display: 'grid',
+                                 gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
+                                 gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`,
+                                 width: 'min(100%, 500px)',
+                                 aspectRatio: '1/1',
+                              }}
+                           >
+                              {Array.from({ length: TOTAL_CELLS }).map((_, i) => {
+                                 const isScanned = scannedCells.has(i);
+                                 const activeDrone = drones.find((d) => d.pos === i && d.label !== 'Delta');
+                                 const isSurvivor = survivorSector === i;
+                                 const showSurvivor = isSurvivor && hasTriggeredSurvivor.current;
+
+                                 return (
+                                    <div
+                                       key={i}
+                                       className={cn(
+                                          "border-[0.5px] border-slate-100 transition-all duration-700 relative group flex items-center justify-center",
+                                          showSurvivor
+                                             ? "bg-amber-400/30 border-amber-500/50 animate-pulse"
+                                             : isScanned
+                                                ? "bg-blue-500/10 border-blue-500/20"
+                                                : "bg-transparent hover:bg-slate-50",
+                                       )}
+                                       title={`Sector ${i}`}
+                                    >
+                                       {activeDrone && (
+                                          <div className="absolute inset-0 flex items-center justify-center z-20">
+                                             <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-transform duration-500", activeDrone.color)}>
+                                                <Crosshair className="w-5 h-5 text-white animate-spin-slow" />
+                                             </div>
+                                             <div className={cn("absolute inset-0 rounded-full animate-ping opacity-75", activeDrone.color)} />
+                                          </div>
+                                       )}
+
+                                       {showSurvivor && !activeDrone && (
+                                          <div className="absolute inset-0 flex items-center justify-center z-30 animate-bounce">
+                                             <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shadow-lg border-2 border-white ring-2 ring-amber-300">
+                                                <User className="w-6 h-6 text-white" />
+                                             </div>
+                                          </div>
+                                       )}
+
+                                       {isScanned && !activeDrone && !showSurvivor && (
+                                          <div className="opacity-20">
+                                             <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                                          </div>
+                                       )}
+                                    </div>
+                                 );
+                              })}
+                           </div>
+                        </>
+                     ) : (
+                        <OpenStreetMapView
+                           className="absolute inset-0"
+                           showModeToggle={false}
+                           initialMapMode="3D"
+                           initialCenter={MANILA_CENTER}
+                           initialZoom={11}
+                           threeDZoom={14.5}
+                           threeDPitch={50}
+                           threeDBearing={18}
+                           buildingMinZoom={11.5}
+                           enableTerrain={false}
+                           droneMarkers={drones
+                              .filter((drone) => drone.label !== "Delta")
+                              .map((drone) => ({
+                                id: String(drone.id),
+                                label: `Unit-${drone.label}`,
+                                coordinates: sectorToLngLat(drone.pos),
+                                color: droneColorToHex(drone.color),
+                              }))}
+                        />
+                     )}
+                  </div>
 
             {/* Sidebar Controls / Info */}
-            <div className="w-full md:w-80 border-l border-slate-200 bg-white p-6 overflow-y-auto">
+            <div className="w-full md:w-80 md:flex-shrink-0 md:self-stretch border-l border-slate-200 bg-white p-6 max-h-72 md:max-h-none md:h-full overflow-y-auto">
                <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                   <Activity className="w-5 h-5 text-blue-600" /> Mission Status
                </h3>

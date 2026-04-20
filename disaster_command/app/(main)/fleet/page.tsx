@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
 import { 
   Card, 
   CardContent, 
@@ -44,17 +43,48 @@ const Fleet = () => {
 
   useEffect(() => {
     const fetchDrones = async () => {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('drone_fleet')
-        .select('*')
-      
-      if (error) {
-        console.error('Error fetching drones:', error)
-      } else {
-        setDrones(data || [])
-      }
-      setLoading(false)
+      setLoading(true);
+      // Mock drone data since Supabase is removed
+      const mockDrones: DroneData[] = [
+        {
+          id: '1',
+          drone_name: 'Alpha-1',
+          battery: 85,
+          status: 'active',
+          weight_class: 'Lightweight',
+          "max_load(kg)": 2.5,
+          image_url: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?q=80&w=400&auto=format&fit=crop'
+        },
+        {
+          id: '2',
+          drone_name: 'Alpha-2',
+          battery: 92,
+          status: 'deployed',
+          weight_class: 'Medium',
+          "max_load(kg)": 5.0,
+          image_url: 'https://images.unsplash.com/photo-1524143902223-93f037e9623e?q=80&w=400&auto=format&fit=crop'
+        },
+        {
+          id: '3',
+          drone_name: 'Alpha-3',
+          battery: 45,
+          status: 'maintenance',
+          weight_class: 'Heavy',
+          "max_load(kg)": 15.0,
+          image_url: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?q=80&w=400&auto=format&fit=crop'
+        },
+        {
+          id: '4',
+          drone_name: 'Alpha-4',
+          battery: 12,
+          status: 'inactive',
+          weight_class: 'Medium',
+          "max_load(kg)": 5.0,
+          image_url: 'https://images.unsplash.com/photo-1506947411487-a56738267384?q=80&w=400&auto=format&fit=crop'
+        }
+      ];
+      setDrones(mockDrones);
+      setLoading(false);
     }
 
     fetchDrones()

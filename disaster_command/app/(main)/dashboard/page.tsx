@@ -18,7 +18,6 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { StatsCard } from "@/components/dashboard/StatsCard";
-import { supabase } from "@/lib/supabaseClient";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function DashboardPage() {
@@ -27,13 +26,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDroneCount = async () => {
-      const { count, error } = await supabase
-        .from('drone_fleet')
-        .select('*', { count: 'exact', head: true });
-      
-      if (!error && count !== null) {
-        setTotalDrones(count);
-      }
+      // Mock drone count since Supabase is removed
+      setTotalDrones(12);
     };
     fetchDroneCount();
   }, []);

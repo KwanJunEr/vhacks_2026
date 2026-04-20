@@ -12,7 +12,7 @@ AI-powered autonomous disaster response with multi-agent coordination and real-t
 | **Planning** | Local AI LLM (QWEN) | Strategic mission planning |
 | **Vision** | YOLOv8 + Roboflow | Real-time detection |
 | **MCP** | MCP Protocol | Autonomous execution |
-| **Coordination and Database** | Supabase | Agent memory & state |
+| **Coordination** | Local Memory | Agent memory & state |
 
 ---
 
@@ -89,7 +89,7 @@ backend/
     │   ├── drone_tools.py         # 7 available tools
     │   └── mcp_server.py          # FastAPI endpoint
     └── database/
-        └── supabase_client.py     # PostgreSQL client
+        └── supabase_client.py     # Local state mock
 ```
 
 ---

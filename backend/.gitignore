@@ -1,0 +1,77 @@
+# -----------------------------
+# Python cache / compiled files
+# -----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# -----------------------------
+# Virtual environment
+# -----------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# -----------------------------
+# uv (Astral package manager)
+# -----------------------------
+# uv lockfile (keep this if you want reproducible builds)
+# Uncomment the next line ONLY if you don't want to commit it
+# uv.lock
+
+# uv cache
+.uv/
+
+# -----------------------------
+# Environment variables
+# -----------------------------
+.env
+.env.*
+*.env
+
+# -----------------------------
+# Logs & runtime files
+# -----------------------------
+*.log
+*.out
+*.err
+
+
+
+# -----------------------------
+# FastAPI / Uvicorn
+# -----------------------------
+*.pid
+*.sock
+
+# -----------------------------
+# IDE / Editor
+# -----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# -----------------------------
+# OS files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+
+
+# -----------------------------
+# Build / distribution
+# -----------------------------
+build/
+dist/
+*.egg-info/
+
+
+
+# -----------------------------
+# Misc
+# -----------------------------
+*.tmp
+*.bak

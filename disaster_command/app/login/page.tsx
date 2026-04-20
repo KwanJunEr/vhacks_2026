@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [loggedInUser, setLoggedInUser] = useState<any>(null);
 
   const handleLogin = async (e: React.FormEvent) => {

@@ -30,3 +30,4 @@ coverage/
 *.sqlite3
 *.env
 *.env.local
+.history/

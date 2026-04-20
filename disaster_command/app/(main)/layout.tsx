@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -16,10 +16,10 @@ import {
   Menu,
   X,
   Search,
-  User,
   Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserDropdown } from "@/components/login/UserDropdown";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Radar },
@@ -39,6 +39,16 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
@@ -117,22 +127,7 @@ export default function DashboardLayout({
 
         {/* User Profile */}
         <div className="p-4 border-t border-border shrink-0">
-          <div className="bg-accent/50 rounded-lg p-4 border border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-blue-600 flex items-center justify-center text-primary-foreground font-bold shadow-md shrink-0">
-                CM
-              </div>
-              <div>
-                <div className="text-sm font-medium text-foreground">
-                  Commander
-                </div>
-                <div className="text-xs text-emerald-600 flex items-center gap-1 font-medium">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Online
-                </div>
-              </div>
-            </div>
-          </div>
+          <UserDropdown user={user} />
         </div>
       </aside>
 
@@ -167,9 +162,7 @@ export default function DashboardLayout({
               <span className="absolute top-1.5 right-1.5 block h-2 w-2 rounded-full bg-destructive ring-2 ring-background animate-pulse" />
             </button>
             <div className="h-6 w-px bg-border mx-1" />
-            <button className="flex items-center gap-2 p-1 rounded-full text-muted-foreground hover:text-foreground transition-colors">
-              <User className="w-5 h-5" />
-            </button>
+            <UserDropdown user={user} />
           </div>
         </header>
 

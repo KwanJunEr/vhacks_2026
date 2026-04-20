@@ -40,3 +40,5 @@ aiosqlite
 mcp
 fastmcp
 fastapi-mcp 
+
+uv 

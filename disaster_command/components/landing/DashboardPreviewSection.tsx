@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { Icon } from "lucide-react";
+
 
 export default function DashboardPreviewSection() {
   return (
@@ -152,6 +152,8 @@ export default function DashboardPreviewSection() {
   );
 }
 
+type StatusType = "operational" | "progress" | "alert";
+
 function StatCard({
   icon: Icon,
   label,
@@ -161,19 +163,17 @@ function StatCard({
   icon: React.ElementType;
   label: string;
   value: string;
-  status: "operational" | "progress" | "alert";
+  status: StatusType;
 }) {
-  const statusColors = {
-    operational: "text-green-600",
-    progress: "text-primary",
-    alert: "text-orange-500",
-  };
+  const statusColors: Record<StatusType, string> = {
+  operational: "text-green-600",
+  progress: "text-primary",
+  alert: "text-orange-500",
+};
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-2 mb-2">
-        
-        <Icon className={`w-4 h-4 ${statusColors[status]}`} />
         <span className="text-xs text-muted-foreground">{label}</span>
       </div>
       <span className="text-2xl font-bold text-foreground">{value}</span>

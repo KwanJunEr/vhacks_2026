@@ -74,13 +74,13 @@ function DonutChart({ data, title }: DonutChartProps) {
 
   return (
     <div className="flex flex-col items-center gap-4 flex-1 relative">
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+      <span className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">
         {title}
       </span>
-      <div className="relative w-32 h-32" onMouseMove={handleMouseMove}>
+      <div className="relative w-48 h-48" onMouseMove={handleMouseMove}>
         <svg
           viewBox="0 0 100 100"
-          className="w-full h-full transform -rotate-90"
+          className="w-full h-full transform -rotate-90 drop-shadow-xl"
         >
           {data.map((item, index) => {
             const startAngle = (cumulativeValue / total) * 360;
@@ -102,17 +102,17 @@ function DonutChart({ data, title }: DonutChartProps) {
                 animate={{
                   pathLength: 1,
                   opacity: hoveredIndex === null || isHovered ? 1 : 0.6,
-                  scale: isHovered ? 1.05 : 1,
+                  scale: isHovered ? 1.08 : 1,
                 }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                transition={{ duration: 0.5 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
                 className={`fill-current cursor-pointer transition-all ${item.color.replace("bg-", "text-")}`}
               />
             );
           })}
-          <circle cx="50" cy="50" r="28" fill="white" />
+          <circle cx="50" cy="50" r="30" fill="white" className="shadow-inner" />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <AnimatePresence mode="wait">
@@ -125,11 +125,11 @@ function DonutChart({ data, title }: DonutChartProps) {
                 className="flex flex-col items-center"
               >
                 <span
-                  className={`text-xl font-black ${data[hoveredIndex].hoverColor}`}
+                  className={`text-2xl font-black ${data[hoveredIndex].hoverColor}`}
                 >
                   {data[hoveredIndex].value}%
                 </span>
-                <span className="text-[7px] font-bold text-slate-400 uppercase leading-none">
+                <span className="text-[10px] font-bold text-slate-400 uppercase leading-none tracking-tighter">
                   {data[hoveredIndex].name}
                 </span>
               </motion.div>
@@ -141,16 +141,38 @@ function DonutChart({ data, title }: DonutChartProps) {
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center"
               >
-                <span className="text-xl font-black text-slate-900">
+                <span className="text-3xl font-black text-slate-900">
                   {total}%
                 </span>
-                <span className="text-[7px] font-bold text-slate-400 uppercase">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Total
                 </span>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+      </div>
+
+      {/* Details List Below Graph */}
+      <div className="w-full mt-6 space-y-2">
+        {data.map((item, index) => (
+          <div key={index} className="flex items-center justify-between group">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${item.color} shadow-sm`} />
+              <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors">{item.name}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${item.value}%` }}
+                  className={`h-full ${item.color}`}
+                />
+              </div>
+              <span className="text-xs font-black text-slate-900 w-8 text-right">{item.value}%</span>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Floating Tooltip */}
@@ -191,32 +213,27 @@ export function FleetDistribution() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm h-full max-h-[300px]"
+      className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-bold text-slate-900">Fleet Metrics</h3>
-        <div className="px-2 py-0.5 bg-blue-50 border border-blue-100 rounded-full">
-          <span className="text-[8px] font-bold text-blue-600 uppercase tracking-tighter">
-            Live Telemetry
-          </span>
+      <div className="flex items-center justify-between mb-10">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-xl font-black text-slate-900 tracking-tight">Fleet Intelligence Metrics</h3>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Real-time Swarm Distribution & Energy Analysis</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="px-3 py-1 bg-blue-50 border border-blue-100 rounded-full flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">
+              Live Telemetry
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-around gap-2">
-        <DonutChart data={statusData} title="System Status" />
-        <div className="w-px h-24 bg-slate-100 self-center" />
-        <DonutChart data={batteryData} title="Battery Levels" />
-      </div>
-
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        {statusData.map((item, index) => (
-          <div key={index} className="flex flex-col items-center gap-1">
-            <div className={`w-1.5 h-1.5 rounded-full ${item.color}`} />
-            <span className="text-[7px] font-bold text-slate-400 uppercase truncate w-full text-center">
-              {item.name}
-            </span>
-          </div>
-        ))}
+      <div className="flex-1 flex items-start justify-around gap-12">
+        <DonutChart data={statusData} title="Swarm Operational Status" />
+        <div className="w-px self-stretch bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
+        <DonutChart data={batteryData} title="Energy Reserve Distribution" />
       </div>
     </motion.div>
   );

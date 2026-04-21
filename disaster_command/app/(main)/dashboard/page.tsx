@@ -124,7 +124,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Primary Analytics Row - Timeline & Accuracy 50/50 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[300px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[450px] py-4">
         <div className="h-full">
           <MissionGanttChart />
         </div>
@@ -134,7 +134,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Fleet & Battery Row - New Line */}
-      <div className="w-full h-[280px]">
+      <div className="w-full h-[800px] pt-15 pb-2">
         <FleetDistribution />
       </div>
 
@@ -144,11 +144,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Secondary Operational Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[450px]">
+        <div className="lg:col-span-2 h-full">
           <ConfidenceScoreGrid />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <ActiveFleetManagement />
         </div>
       </div>

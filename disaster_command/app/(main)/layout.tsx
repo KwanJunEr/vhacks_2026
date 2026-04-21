@@ -23,13 +23,13 @@ import { UserDropdown } from "@/components/login/UserDropdown";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Radar },
-  { name: "Disaster Events", href: "/dashboard/events", icon: MapIcon },
-  { name: "Drone Fleet", href: "/dashboard/fleet", icon: Plane },
-  { name: "Datasets", href: "/dashboard/datasets", icon: Database },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { name: "Resources", href: "/dashboard/resources", icon: BookOpenText },
-  { name: "Reports", href: "/dashboard/reports", icon: FileText },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Disaster Events", href: "/events", icon: MapIcon },
+  { name: "Drone Fleet", href: "/fleet", icon: Plane },
+  { name: "Datasets", href: "/datasets", icon: Database },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Resources", href: "/resources", icon: BookOpenText },
+  { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function DashboardLayout({

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import React, { Suspense, useState, useEffect } from "react";
@@ -7,11 +8,7 @@ import Globe3D from "@/components/Globe3D";
 import {
   Activity,
   AlertTriangle,
-  Users,
-  CheckCircle2,
-  Plane,
   Siren,
-  ShieldCheck,
   MapPin,
   ArrowRight,
 } from "lucide-react";
@@ -19,7 +16,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserDropdown } from "@/components/login/UserDropdown";
 import { FleetDistribution } from "@/components/dashboard/FleetDistribution";
 import { ConfidenceScoreGrid } from "@/components/dashboard/ConfidenceScoreGrid";
 import { CriticalAlertsLog } from "@/components/dashboard/CriticalAlertsLog";
@@ -31,6 +27,7 @@ export default function DashboardPage() {
   const [simState, setSimState] = useState<"idle" | "detecting" | "detected">(
     "idle",
   );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {

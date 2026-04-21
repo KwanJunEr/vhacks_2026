@@ -57,13 +57,12 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Global Command Grid
+            Disaster Command Grid Dashboard
           </h1>
           <p className="text-slate-500 font-medium">
             Real-time Multi-Agent Swarm Intelligence & Response
           </p>
         </div>
-        <UserDropdown user={user} />
       </div>
 
       {/* KPI Grid */}
@@ -108,7 +107,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Primary Analytics Row - Timeline & Accuracy 50/50 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[350px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[300px]">
         <div className="h-full">
           <MissionGanttChart />
         </div>
@@ -118,7 +117,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Fleet & Battery Row - New Line */}
-      <div className="w-full h-[320px]">
+      <div className="w-full h-[280px]">
         <FleetDistribution />
       </div>
 

@@ -64,15 +64,20 @@ interface DonutChartProps {
 
 function DonutChart({ data, title }: DonutChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const total = data.reduce((acc, item) => acc + item.value, 0);
   let cumulativeValue = 0;
 
+  const handleMouseMove = (e: React.MouseEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+  };
+
   return (
-    <div className="flex flex-col items-center gap-4 flex-1">
+    <div className="flex flex-col items-center gap-4 flex-1 relative">
       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
         {title}
       </span>
-      <div className="relative w-32 h-32">
+      <div className="relative w-32 h-32" onMouseMove={handleMouseMove}>
         <svg
           viewBox="0 0 100 100"
           className="w-full h-full transform -rotate-90"
@@ -147,6 +152,36 @@ function DonutChart({ data, title }: DonutChartProps) {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Floating Tooltip */}
+      <AnimatePresence>
+        {hoveredIndex !== null && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+            style={{
+              position: "fixed",
+              left: mousePos.x + 15,
+              top: mousePos.y - 40,
+              zIndex: 100,
+            }}
+            className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-xl pointer-events-none"
+          >
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-2 h-2 rounded-full ${data[hoveredIndex].color}`}
+              />
+              <span className="text-xs font-bold whitespace-nowrap">
+                {data[hoveredIndex].name}
+              </span>
+              <span className="text-xs font-black text-blue-400 ml-1">
+                {data[hoveredIndex].value}%
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

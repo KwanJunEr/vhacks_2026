@@ -16,7 +16,7 @@ export function ActiveFleetManagement() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"
+      className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm min-h-[340px]"
     >
       <h3 className="text-lg font-bold text-slate-900 mb-6">Fleet & Battery Health</h3>
       <div className="space-y-4">

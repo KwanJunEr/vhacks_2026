@@ -32,12 +32,12 @@ export function AICoordinationTrend() {
             key={i}
             className="flex-1 flex flex-col items-center gap-1 group"
           >
-            <div className="w-full bg-slate-50 rounded-lg relative overflow-hidden h-24 border border-slate-100/50">
+            <div className="w-full bg-slate-50 rounded-lg relative overflow-hidden h-20 border border-slate-100/50">
               <motion.div
                 initial={{ height: 0 }}
                 animate={{ height: `${val}%` }}
                 transition={{ duration: 1, delay: i * 0.1 }}
-                className="absolute bottom-0 w-full bg-gradient-to-t from-blue-600 to-blue-400 group-hover:from-blue-500 group-hover:to-blue-300 transition-colors"
+                className="absolute bottom-0 w-full bg-blue-500 group-hover:bg-blue-600 transition-colors"
               />
             </div>
             <span className="text-[7px] font-bold text-slate-400 uppercase">
@@ -47,7 +47,7 @@ export function AICoordinationTrend() {
         ))}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-2 flex items-center justify-between">
         <div className="flex gap-4">
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-slate-900">72%</span>
@@ -64,7 +64,7 @@ export function AICoordinationTrend() {
             </span>
           </div>
         </div>
-        <div className="px-2 py-1 bg-blue-50 border border-blue-100 rounded text-[8px] font-black text-blue-600 uppercase tracking-tighter">
+        <div className="px-2 py-0.5 bg-blue-50 border border-blue-100 rounded text-[8px] font-black text-blue-600 uppercase tracking-tighter">
           ML Optimized
         </div>
       </div>

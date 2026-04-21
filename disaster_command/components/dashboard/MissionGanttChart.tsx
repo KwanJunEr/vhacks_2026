@@ -166,25 +166,7 @@ export function MissionGanttChart() {
         </div>
       </div>
 
-      <div className="mt-8 pt-4 border-t border-slate-50 flex justify-between items-center">
-        <span className="text-[10px] font-bold text-slate-400 uppercase">
-          AI Optimized Schedule
-        </span>
-        <div className="flex gap-2">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-blue-400" />
-            <span className="text-[8px] font-bold text-slate-500 uppercase">
-              Phase 1
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span className="text-[8px] font-bold text-slate-500 uppercase">
-              Phase 2
-            </span>
-          </div>
-        </div>
-      </div>
+     
     </motion.div>
   );
 }

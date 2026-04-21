@@ -166,7 +166,32 @@ export function MissionGanttChart() {
         </div>
       </div>
 
-     
+      <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between group hover:bg-white hover:shadow-md transition-all">
+        <div className="flex flex-col">
+          <span className="text-[9px] font-black text-blue-600 uppercase tracking-tighter flex items-center gap-1">
+            <motion.div
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-1 h-1 rounded-full bg-blue-500"
+            />
+            AI Optimized
+          </span>
+        </div>
+        <div className="flex gap-3">
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+            <span className="text-[7px] font-black text-slate-500 uppercase">
+              Phase 1
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="text-[7px] font-black text-slate-500 uppercase">
+              Phase 2
+            </span>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }

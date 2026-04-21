@@ -10,7 +10,7 @@ export function AICoordinationTrend() {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full max-h-[300px]"
+      className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full"
     >
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col gap-0.5">
@@ -26,21 +26,21 @@ export function AICoordinationTrend() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-end gap-2 pb-2">
+      <div className="flex-1 flex items-stretch gap-2 pb-2">
         {trendData.map((val, i) => (
           <div
             key={i}
-            className="flex-1 flex flex-col items-center gap-1 group"
+            className="flex-1 flex flex-col items-center gap-2 group h-full"
           >
-            <div className="w-full bg-slate-50 rounded-lg relative overflow-hidden h-20 border border-slate-100/50">
+            <div className="w-full bg-slate-50/50 rounded-xl relative overflow-hidden flex-1 border border-slate-100/50">
               <motion.div
                 initial={{ height: 0 }}
                 animate={{ height: `${val}%` }}
-                transition={{ duration: 1, delay: i * 0.1 }}
-                className="absolute bottom-0 w-full bg-blue-500 group-hover:bg-blue-600 transition-colors"
+                transition={{ duration: 1.2, delay: i * 0.1, ease: "easeOut" }}
+                className="absolute bottom-0 w-full bg-gradient-to-t from-blue-600 to-blue-400 group-hover:from-blue-500 group-hover:to-blue-300 transition-all shadow-[0_-4px_12px_rgba(59,130,246,0.2)]"
               />
             </div>
-            <span className="text-[7px] font-bold text-slate-400 uppercase">
+            <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
               Q{i + 1}
             </span>
           </div>

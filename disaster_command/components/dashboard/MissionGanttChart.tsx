@@ -78,7 +78,7 @@ export function MissionGanttChart() {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col max-h-[300px]"
+      className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm h-full flex flex-col"
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex flex-col gap-0.5">
@@ -139,7 +139,7 @@ export function MissionGanttChart() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-10">
           {currentTasks.map((task, index) => (
             <div
               key={`${selectedEvent}-${task.task}`}

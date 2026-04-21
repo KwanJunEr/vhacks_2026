@@ -19,7 +19,7 @@ export function ConfidenceScoreGrid() {
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"
+      className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm h-full"
     >
       <div className="flex items-center justify-between mb-8">
         <h3 className="text-lg font-bold text-slate-900">AI Confidence Matrix</h3>
@@ -29,7 +29,7 @@ export function ConfidenceScoreGrid() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-10">
         {scores.map((score, index) => (
           <div key={index} className="space-y-2">
             <div className="flex justify-between items-end">

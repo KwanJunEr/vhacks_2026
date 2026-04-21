@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
@@ -29,7 +30,7 @@ export default function DashboardPage() {
   );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
-
+  const [metrics, setMetrics] = useState<any>(null);
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -49,6 +50,21 @@ export default function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/metrics`);
+        const data = await res.json();
+        setMetrics(data);
+      } catch (err) {
+        console.error("Failed to fetch metrics", err);
+      }
+    };
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-8 pb-12">
       <div className="flex items-center justify-between">
@@ -66,37 +82,41 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatsCard
           title="Swarm Efficiency"
-          value="98.2%"
+          value={`${metrics?.swarm_efficiency ?? 0}%`}
           change="+1.2%"
           color="blue"
           index={0}
         />
+
         <StatsCard
           title="Utilization Rate"
-          value="92.4%"
+          value={`${metrics?.utilization_rate ?? 0}%`}
           change="+5.1%"
           color="emerald"
           index={1}
         />
+
         <StatsCard
           title="Drone Failures"
-          value="12"
+          value={metrics?.drone_failures ?? 0}
           change="-4"
           color="red"
           index={2}
-          subValue="45s"
+          subValue={`${metrics?.avg_recovery ?? 0}s`}
           subLabel="Avg Recovery"
         />
+
         <StatsCard
           title="Coordination Acc."
-          value="94.2%"
+          value={`${metrics?.coordination_accuracy ?? 0}%`}
           change="+2.4%"
           color="indigo"
           index={3}
         />
+
         <StatsCard
           title="Critical Events"
-          value="3"
+          value={metrics?.critical_events ?? 0}
           change="+1"
           color="red"
           index={4}

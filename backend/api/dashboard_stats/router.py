@@ -1,6 +1,10 @@
 from fastapi import APIRouter
 import random
-from .schemas import SwarmMetrics
+from .schemas import (
+    AICoordinationAccuracyPoint,
+    AICoordinationAccuracyResponse,
+    SwarmMetrics,
+)
 
 router = APIRouter(tags=["dashboard"])
 
@@ -17,3 +21,16 @@ def get_metrics():
         coordination_accuracy=fluctuate(94.0, 2.0),
         critical_events=3,
     )
+
+
+@router.get("/ai-coordination-accuracy", response_model=AICoordinationAccuracyResponse)
+def get_ai_coordination_accuracy():
+    labels = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"]
+    data = [
+        AICoordinationAccuracyPoint(
+            label=label,
+            accuracy=round(random.uniform(89.0, 96.0), 1),
+        )
+        for label in labels
+    ]
+    return AICoordinationAccuracyResponse(data=data)

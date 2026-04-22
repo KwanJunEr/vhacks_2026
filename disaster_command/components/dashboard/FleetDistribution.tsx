@@ -22,8 +22,9 @@ const defaultBatteryData = [
 
 interface DroneDetail {
   id: number;
+  name: string;
   status: string;
-  battery_level: number;
+  battery: number;
 }
 
 interface DonutChartProps {
@@ -313,12 +314,12 @@ export function FleetDistribution() {
                 <div className="flex items-center gap-1 ml-auto shrink-0">
                   <div className="w-10 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${batteryBarColor(drone.battery_level)}`}
-                      style={{ width: `${drone.battery_level}%` }}
+                      className={`h-full rounded-full transition-all ${batteryBarColor(drone.battery)}`}
+                      style={{ width: `${drone.battery}%` }}
                     />
                   </div>
-                  <span className={`text-[10px] font-black ${batteryTextColor(drone.battery_level)}`}>
-                    {Math.round(drone.battery_level)}%
+                  <span className={`text-[10px] font-black ${batteryTextColor(drone.battery)}`}>
+                    {Math.round(drone.battery)}%
                   </span>
                 </div>
               </div>

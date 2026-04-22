@@ -3,54 +3,41 @@ from api.core.database import get_db_connection
 def get_drone_telemetry():
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # -----------------------------
-    # STATUS DISTRIBUTION (FIXED)
-    # -----------------------------
+
     cursor.execute("SELECT status, COUNT(*) as count FROM drones GROUP BY status")
     status_rows = cursor.fetchall()
-    print("RAW STATUS ROWS:", status_rows)
+
     status_map = {
-        "idle":      {"name": "Idle",      "color": "bg-slate-400",  "hoverColor": "text-slate-500"},
-        "flying":    {"name": "Flying",    "color": "bg-blue-500",   "hoverColor": "text-blue-600"},
-        "scanning":  {"name": "Scanning",  "color": "bg-violet-500", "hoverColor": "text-violet-600"},
-        "returning": {"name": "Returning", "color": "bg-amber-500",  "hoverColor": "text-amber-600"},
-        "rescuing":  {"name": "Rescuing",  "color": "bg-red-500",    "hoverColor": "text-red-600"},
-        "supplying": {"name": "Supplying", "color": "bg-emerald-500","hoverColor": "text-emerald-600"},
+        "Active": {"name": "Active", "color": "bg-blue-500", "hoverColor": "text-blue-600"},
+        "Charging": {"name": "Charging", "color": "bg-emerald-500", "hoverColor": "text-emerald-600"},
+        "Maintenance": {"name": "Maintenance", "color": "bg-amber-500", "hoverColor": "text-amber-600"},
+        "Critical": {"name": "Critical", "color": "bg-red-500", "hoverColor": "text-red-600"},
+        "Idle": {"name": "Idle", "color": "bg-slate-400", "hoverColor": "text-slate-500"},
+        "idle": {"name": "Idle", "color": "bg-slate-400", "hoverColor": "text-slate-500"},
+        "Flying": {"name": "Flying", "color": "bg-blue-500", "hoverColor": "text-blue-600"},
+        "flying": {"name": "Flying", "color": "bg-blue-500", "hoverColor": "text-blue-600"},
+        "scanning": {"name": "Scanning", "color": "bg-purple-500", "hoverColor": "text-purple-600"},
+        "returning": {"name": "Returning", "color": "bg-amber-500", "hoverColor": "text-amber-600"},
+        "rescuing": {"name": "Rescuing", "color": "bg-red-500", "hoverColor": "text-red-600"},
+        "supplying": {"name": "Supplying", "color": "bg-emerald-500", "hoverColor": "text-emerald-600"},
     }
 
-    # Initialize ALL statuses with 0
-    status_counts = {key: 0 for key in status_map.keys()}
+    status_data = []
     total_drones = 0
-
-    # Fill actual counts
     for row in status_rows:
+        row = dict(row)
         status_name = row["status"]
         count = row["count"]
         total_drones += count
-        if status_name in status_counts:
-            status_counts[status_name] = count
+        if status_name in status_map:
+            item = status_map[status_name].copy()
+            item["value"] = count
+            status_data.append(item)
 
-    # Build final status_data (ALWAYS SAME ORDER)
-    status_data = []
-    for status_name, config in status_map.items():
-        item = config.copy()
-        item["name"] = config["name"]
-        item["value"] = status_counts[status_name]
-        status_data.append(item)
-
-    # Convert to %
     if total_drones > 0:
         for item in status_data:
             item["value"] = round((item["value"] / total_drones) * 100)
-    else:
-        # fallback (avoid empty chart issues)
-        for item in status_data:
-            item["value"] = 0
 
-    # -----------------------------
-    # BATTERY DISTRIBUTION
-    # -----------------------------
     cursor.execute("SELECT battery_level FROM drones")
     battery_rows = cursor.fetchall()
 
@@ -62,8 +49,8 @@ def get_drone_telemetry():
     }
 
     battery_counts = {name: 0 for name in battery_ranges}
-
     for row in battery_rows:
+        row = dict(row)
         level = row["battery_level"]
         for name, r in battery_ranges.items():
             if r["min"] <= level <= r["max"]:
@@ -79,58 +66,75 @@ def get_drone_telemetry():
         item["value"] = count
         battery_data.append(item)
 
-    # Convert to %
     if total_drones > 0:
         for item in battery_data:
             item["value"] = round((item["value"] / total_drones) * 100)
-    else:
-        for item in battery_data:
-            item["value"] = 0
 
-    # -----------------------------
-    # DRONE LIST
-    # -----------------------------
-    cursor.execute("SELECT id, status, battery_level FROM drones ORDER BY id")
+    cursor.execute("SELECT id, drone_name, status, battery_level FROM drones")
     drone_rows = cursor.fetchall()
-
-    drones = [
-        {
-            "id": row["id"],
-            "status": row["status"],
-            "battery_level": row["battery_level"]
-        }
-        for row in drone_rows
-    ]
+    drones_list = []
+    for d in drone_rows:
+        d = dict(d)
+        drones_list.append({
+            "id": str(d["id"]),
+            "name": d.get("drone_name") or f"Drone-{d['id']}",
+            "status": d.get("status") or "idle",
+            "battery": int(d["battery_level"])
+        })
 
     conn.close()
 
     return {
         "status_data": status_data,
         "battery_data": battery_data,
-        "drones": drones,
+        "drones": drones_list
     }
 
-
-def get_drone_fleet_battery_health():
+def get_full_fleet_info():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, drone_name, status, battery_level
-        FROM drones
-    """)
+    cursor.execute("SELECT id, drone_name, status, battery_level FROM drones")
     rows = cursor.fetchall()
 
     drones = []
+    for row in rows:
+        row = dict(row)
+        drone = {
+            "id": str(row["id"]),
+            "name": row.get("drone_name") or f"Drone-{row['id']}",
+            "status": row.get("status") or "idle",
+            "battery": int(row.get("battery_level") or 0)
+        }
+        drones.append(drone)
 
-    for r in rows: 
-        drones.append({
-            "id": str(r[0]),
-            "name": r[1],
-            "status": r[2],
-            "battery": int(r[3]),
-        })
-    
+    conn.close()
     return {"drones": drones}
 
+def get_detailed_fleet_info():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM drones")
+    rows = cursor.fetchall()
 
+    drones = []
+    for row in rows:
+        row = dict(row)
+        drone = {
+            "id": str(row["id"]),
+            "name": row.get("drone_name") or f"Drone-{row['id']}",
+            "status": row.get("status") or "idle",
+            "battery": int(row.get("battery_level") or 0),
+            "model": row.get("weight_class") or "Medium",
+            "brand": row.get("brand_name") or "AeroTech",
+            "profile": row.get("description") or "Survey Pro",
+            "health": row.get("health_status") or "optimal",
+            "color": row.get("color") or "blue",
+            "altitude": row.get("altitude") or 0.0,
+            "airspeed": row.get("airspeed") or 0.0,
+            "current_x": row.get("current_x") or 0.0,
+            "current_y": row.get("current_y") or 0.0,
+        }
+        drones.append(drone)
 
+    conn.close()
+    return {"drones": drones}

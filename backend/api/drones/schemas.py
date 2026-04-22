@@ -7,21 +7,34 @@ class TelemetryItem(BaseModel):
     color: str
     hoverColor: str
 
-class DroneDetail(BaseModel):
-    id: int
-    status: str
-    battery_level: float
-
-class DroneTelemetryResponse(BaseModel):
-    status_data: List[TelemetryItem]
-    battery_data: List[TelemetryItem]
-    drones: List[DroneDetail]
-
-class DroneFleetItem(BaseModel):
+class DroneFullFleetItem(BaseModel):
     id: str
     name: str
     status: str
     battery: int
 
-class DroneFleetResponse(BaseModel):
-    drones: List[DroneFleetItem]
+class DroneTelemetryResponse(BaseModel):
+    status_data: List[TelemetryItem]
+    battery_data: List[TelemetryItem]
+    drones: List[DroneFullFleetItem]
+
+class DroneFullFleetResponse(BaseModel):
+    drones: List[DroneFullFleetItem]
+
+class DroneDetailedFleetItem(BaseModel):
+    id: str
+    name: str
+    status: str
+    battery: int
+    model: str
+    brand: str
+    profile: str
+    health: str
+    color: str
+    altitude: float
+    airspeed: float
+    current_x: float
+    current_y: float
+
+class DroneDetailedFleetResponse(BaseModel):
+    drones: List[DroneDetailedFleetItem]

@@ -125,11 +125,6 @@ export default function DashboardLayout({
             );
           })}
         </nav>
-
-        {/* User Profile */}
-        <div className="p-4 border-t border-border shrink-0">
-          <UserDropdown user={user} />
-        </div>
       </aside>
 
       {/* Main Content Area */}

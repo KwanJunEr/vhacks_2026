@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React ,{useEffect, useState}from "react";
 import { motion } from "framer-motion";
 import { DroneFleetGrid } from "@/components/drones/DroneFleetGrid";
 import { Plane, Zap, ShieldAlert, Cpu } from "lucide-react";

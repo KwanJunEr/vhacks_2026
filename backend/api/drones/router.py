@@ -2,12 +2,14 @@ from fastapi import APIRouter
 from .schemas import (
     DroneTelemetryResponse, 
     DroneFullFleetResponse, 
-    DroneDetailedFleetResponse
+    DroneDetailedFleetResponse,
+    DroneFleetStats
 )
 from .services import (
     get_drone_telemetry, 
     get_full_fleet_info, 
-    get_detailed_fleet_info
+    get_detailed_fleet_info,
+    fleet_status
 )
 
 router = APIRouter(prefix="/drones", tags=["drones"])
@@ -26,3 +28,10 @@ def get_fleet_info():
 def get_detailed_fleet():
     """Returns comprehensive drone data for 3D grid and detail pages"""
     return get_detailed_fleet_info()
+
+
+@router.get("/fleet_stats", response_model=DroneFleetStats)
+def get_fleet_stats():
+    return fleet_status()
+
+

@@ -38,3 +38,10 @@ class DroneDetailedFleetItem(BaseModel):
 
 class DroneDetailedFleetResponse(BaseModel):
     drones: List[DroneDetailedFleetItem]
+
+
+class DroneFleetStats(BaseModel):
+    operational_assets:int
+    total_swarm_power:float
+    maintenance_required: int
+    ai_sync_status: str

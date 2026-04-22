@@ -2,36 +2,45 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { 
-  ArrowLeft, 
-  Battery, 
-  Signal, 
-  Activity, 
-  ShieldCheck, 
-  Cpu,
-  Map as MapIcon,
-  Clock,
-  Settings
-} from "lucide-react";
-import { Canvas } from "@react-three/fiber";
-import DroneCard from "@/components/drones/DroneCard"; // We can reuse the 3D scene from here or create a bigger one
+import { ArrowLeft, Cpu, Gauge, Activity, Radio, Wrench } from "lucide-react";
+import DroneViewer3D from "@/components/drones/DroneViewer3D";
+import DroneBasicInfoTab from "@/components/drones/tabs/DroneBasicInfoTab";
+import DroneSpecsTab from "@/components/drones/tabs/DroneSpecsTab";
+import DroneSignalHealthTab from "@/components/drones/tabs/DroneSignalHealthTab";
+import DroneRotorTab from "@/components/drones/tabs/DroneRotorTab";
+import DronePredictiveTab from "@/components/drones/tabs/DronePredictiveTab";
+import { DroneDetail } from "@/types/DroneDetails";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+
+
+type TabId = "basic" | "specs" | "signal" | "rotors" | "predictive";
+
+const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: "basic",      label: "Basic Info",   icon: Cpu },
+  { id: "specs",      label: "Specs",        icon: Gauge },
+  { id: "signal",     label: "Signal Health", icon: Activity },
+  { id: "rotors",     label: "Rotors",       icon: Radio },
+  { id: "predictive", label: "Maintenance",  icon: Wrench },
+];
 
 export default function DroneDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [drone, setDrone] = useState<any>(null);
+  const [drone, setDrone] = useState<DroneDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>("basic");
 
   useEffect(() => {
     const fetchDrone = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/drones/full_fleet`);
-        const data = await response.json();
-        const foundDrone = data.drones.find((d: any) => d.id === params.id);
-        setDrone(foundDrone);
-      } catch (err) {
-        console.error("Error fetching drone detail:", err);
+        const res = await fetch(`${API_BASE}/api/drones/${params.id}`);
+        if (!res.ok) throw new Error("Not found");
+        const data = await res.json();
+        setDrone(data);
+      } catch {
+        setDrone(null);
       } finally {
         setIsLoading(false);
       }
@@ -39,12 +48,26 @@ export default function DroneDetailPage() {
     fetchDrone();
   }, [params.id]);
 
-  if (isLoading) return <div className="p-12 text-emerald-500 font-mono">ACCESSING ENCRYPTED DATA...</div>;
-  if (!drone) return <div className="p-12 text-red-500 font-mono">DRONE UNIT NOT FOUND</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-blue-500 font-mono text-sm tracking-widest animate-pulse">ACCESSING ENCRYPTED DATA...</p>
+      </div>
+    );
+  }
+
+  if (!drone) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-red-500 font-mono text-sm tracking-widest">DRONE UNIT NOT FOUND</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 pb-12">
-      <button 
+    <div className="space-y-6 pb-12">
+      {/* Back nav */}
+      <button
         onClick={() => router.back()}
         className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-bold text-xs uppercase tracking-widest"
       >
@@ -52,92 +75,111 @@ export default function DroneDetailPage() {
         Back to Swarm
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* 3D Visualization Large */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-gradient-to-br from-[#0a1a10] to-[#061209] rounded-3xl border border-[#0d2e18] p-4 h-[400px] shadow-2xl relative overflow-hidden">
-             <div className="absolute top-6 left-6 z-10">
-                <span className="text-[10px] font-black text-emerald-500/50 uppercase tracking-[0.3em]">Holographic Telemetry</span>
-             </div>
-             {/* We'll use the DroneCard's scene logic here - for brevity, reuse component or extract scene */}
-             <div className="h-full w-full">
-                <DroneCard {...drone} />
-             </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900 flex items-center gap-2">
-              <Settings className="w-4 h-4 text-blue-500" />
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="py-3 px-4 bg-blue-50 text-blue-600 rounded-xl font-bold text-[10px] uppercase hover:bg-blue-100 transition-all">Manual Override</button>
-              <button className="py-3 px-4 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-[10px] uppercase hover:bg-emerald-100 transition-all">Reroute Mission</button>
-              <button className="py-3 px-4 bg-amber-50 text-amber-600 rounded-xl font-bold text-[10px] uppercase hover:bg-amber-100 transition-all">Reboot Core</button>
-              <button className="py-3 px-4 bg-red-50 text-red-600 rounded-xl font-bold text-[10px] uppercase hover:bg-red-100 transition-all">Emergency Land</button>
-            </div>
-          </div>
+      {/* Page header */}
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter">{drone.drone_name}</h1>
+          <p className="text-slate-500 font-medium text-sm mt-0.5">
+            {drone.brand_name} · {drone.weight_class} · ID #{drone.id}
+          </p>
+        </div>
+      </div>
+
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
+        {/* LEFT: 3D viewer */}
+        <div className="lg:col-span-2">
+          <DroneViewer3D color={drone.color} status={drone.status} />
         </div>
 
-        {/* Detailed Stats */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-black text-slate-900 tracking-tighter">{drone.name}</h1>
-              <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-full uppercase tracking-widest">{drone.status}</span>
-            </div>
-            <p className="text-slate-500 font-medium text-lg">{drone.brand} {drone.model} • {drone.profile}</p>
+        {/* RIGHT: Tabbed info panel */}
+        <div className="lg:col-span-3 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+          {/* Tab bar */}
+          <div className="flex border-b border-slate-100 overflow-x-auto">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-5 py-4 text-[11px] font-black uppercase tracking-widest whitespace-nowrap border-b-2 transition-all shrink-0 ${
+                    isActive
+                      ? "border-blue-500 text-blue-600 bg-blue-50/50"
+                      : "border-transparent text-slate-400 hover:text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: "Battery Reserve", value: `${drone.battery}%`, icon: Battery, color: "text-emerald-500", bg: "bg-emerald-50" },
-              { label: "Signal Strength", value: "-42 dBm", icon: Signal, color: "text-blue-500", bg: "bg-blue-50" },
-              { label: "Uptime", value: "14h 22m", icon: Clock, color: "text-indigo-500", bg: "bg-indigo-50" },
-            ].map((stat, i) => (
-              <div key={i} className="p-6 rounded-3xl bg-white border border-slate-100 shadow-sm space-y-3">
-                <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center ${stat.color}`}>
-                  <stat.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                  <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Tab content */}
+          <div className="p-6">
+            {activeTab === "basic" && (
+              <DroneBasicInfoTab
+                id={drone.id}
+                drone_name={drone.drone_name}
+                status={drone.status}
+                battery_level={drone.battery_level}
+                health_status={drone.health_status}
+                current_x={drone.current_x}
+                current_y={drone.current_y}
+                description={drone.description}
+                brand_name={drone.brand_name}
+                weight_class={drone.weight_class}
+                years_of_service={drone.years_of_service}
+              />
+            )}
 
-          <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-8">
-            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-500" />
-              Sub-System Diagnostics
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-              {[
-                { label: "Avionics Processor", value: 98, status: "Nominal" },
-                { label: "Propulsion Synchronizer", value: 94, status: "Optimal" },
-                { label: "Optical Sensor Array", value: 89, status: "Good" },
-                { label: "Mesh Comms Bridge", value: 100, status: "Nominal" },
-                { label: "Thermal Analysis Engine", value: 92, status: "Optimal" },
-                { label: "Landing Gear Servo", value: 100, status: "Nominal" },
-              ].map((sys, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-600">{sys.label}</span>
-                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">{sys.status}</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100/50">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${sys.value}%` }}
-                      transition={{ duration: 1.5, delay: i * 0.1 }}
-                      className="h-full bg-emerald-500 rounded-full"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            {activeTab === "specs" && (
+              <DroneSpecsTab
+                max_speed={drone.max_speed}
+                weight={drone.weight}
+                motors={drone.motors}
+                range_km={drone.range_km}
+                flight_time_min={drone.flight_time_min}
+                wind_resistance={drone.wind_resistance}
+                payload={drone.payload}
+              />
+            )}
+
+            {activeTab === "signal" && (
+              <DroneSignalHealthTab
+                flight_controller={drone.flight_controller}
+                gps_module={drone.gps_module}
+                imu_gyro={drone.imu_gyro}
+                battery_mgmt={drone.battery_mgmt}
+                gimbal_control={drone.gimbal_control}
+                comms_link={drone.comms_link}
+              />
+            )}
+
+            {activeTab === "rotors" && (
+              <DroneRotorTab
+                rotor_1_rpm={drone.rotor_1_rpm}
+                rotor_2_rpm={drone.rotor_2_rpm}
+                rotor_3_rpm={drone.rotor_3_rpm}
+                rotor_4_rpm={drone.rotor_4_rpm}
+              />
+            )}
+
+            {activeTab === "predictive" && (
+              <DronePredictiveTab
+                drone_name={drone.drone_name}
+                last_maintenance={drone.last_maintenance}
+                last_updated={drone.last_updated}
+                battery_level={drone.battery_level}
+                health_status={drone.health_status}
+                flight_controller={drone.flight_controller}
+                gps_module={drone.gps_module}
+                data = {drone}
+                
+              />
+            )}
           </div>
         </div>
       </div>

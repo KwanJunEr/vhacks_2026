@@ -1,4 +1,29 @@
+import json
+import logging
 from api.core.database import get_db_connection
+
+logger = logging.getLogger(__name__)
+
+
+def _ensure_evaluations_table():
+    conn = get_db_connection()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS drone_evaluations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            drone_id TEXT,
+            status TEXT,
+            score INTEGER,
+            title TEXT,
+            summary TEXT,
+            reasoning TEXT,
+            items_json TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+_ensure_evaluations_table()
 
 def get_drone_telemetry():
     conn = get_db_connection()
@@ -138,6 +163,72 @@ def get_detailed_fleet_info():
 
     conn.close()
     return {"drones": drones}
+
+
+def get_drone_by_id(drone_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM drones WHERE id = ?", (drone_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    row = dict(row)
+    return {
+        "id": str(row["id"]),
+        "drone_name": row.get("drone_name") or f"Drone-{row['id']}",
+        "status": row.get("status") or "idle",
+        "battery_level": int(row.get("battery_level") or 0),
+        "health_status": row.get("health_status"),
+        "current_x": row.get("current_x"),
+        "current_y": row.get("current_y"),
+        "description": row.get("description"),
+        "brand_name": row.get("brand_name"),
+        "weight_class": row.get("weight_class"),
+        "max_speed": row.get("max_speed"),
+        "weight": row.get("weight"),
+        "motors": row.get("motors"),
+        "range_km": row.get("range_km"),
+        "flight_time_min": row.get("flight_time_min"),
+        "wind_resistance": row.get("wind_resistance"),
+        "payload": row.get("payload"),
+        "flight_controller": row.get("flight_controller"),
+        "gps_module": row.get("gps_module"),
+        "imu_gyro": row.get("imu_gyro"),
+        "battery_mgmt": row.get("battery_mgmt"),
+        "gimbal_control": row.get("gimbal_control"),
+        "comms_link": row.get("comms_link"),
+        "rotor_1_rpm": row.get("rotor_1_rpm"),
+        "rotor_2_rpm": row.get("rotor_2_rpm"),
+        "rotor_3_rpm": row.get("rotor_3_rpm"),
+        "rotor_4_rpm": row.get("rotor_4_rpm"),
+        "last_maintenance": row.get("last_maintenance"),
+        "last_updated": row.get("last_updated"),
+        "color": row.get("color") or "blue",
+        "altitude": row.get("altitude"),
+        "airspeed": row.get("airspeed"),
+        "years_of_service": row.get("years_of_service")
+    }
+
+def save_drone_evaluation(drone_id: str | None, status: str, score: int, title: str, summary: str, reasoning: str, items: list) -> int:
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO drone_evaluations (drone_id, status, score, title, summary, reasoning, items_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (drone_id, status, score, title, summary, reasoning, json.dumps(items)),
+        )
+        conn.commit()
+        eval_id = cursor.lastrowid
+        conn.close()
+        logger.info("Saved evaluation id=%s for drone_id=%s", eval_id, drone_id)
+        return eval_id
+    except Exception:
+        logger.exception("Failed to save drone evaluation for drone_id=%s", drone_id)
+        raise
 
 
 def fleet_status():

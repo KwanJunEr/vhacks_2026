@@ -1,13 +1,12 @@
 import os
 from openai import OpenAI
-from sentence_transformers import SentenceTransformer
-from backend.rag.vector_store import search
+from rag.vector_store import search
 from dotenv import load_dotenv
 
 load_dotenv()
 
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+openai_client = OpenAI(api_key=os.getenv("OPEN_API_KEY"))
+EMBED_MODEL = "text-embedding-3-small"
 
 # --- Retrieval Config ---
 TOP_K = 4               # number of chunks to retrieve
@@ -50,7 +49,7 @@ def format_context(results: list[dict]) -> str:
 def answer_question(question: str) -> dict:
     """
     Full RAG pipeline:
-      1. Embed question using sentence-transformers (free/local)
+      1. Embed question using OpenAI text-embedding-3-small
       2. Retrieve top-k relevant chunks from ChromaDB
       3. Build context from chunks
       4. Send context + question to OpenAI GPT to generate answer
@@ -63,9 +62,9 @@ def answer_question(question: str) -> dict:
       }
     """
 
-    # Step 1: Embed the question locally (sentence-transformers, free)
+    # Step 1: Embed the question via OpenAI
     print(f"\n🔍 Embedding question: '{question}'")
-    query_embedding = embedding_model.encode(question).tolist()
+    query_embedding = openai_client.embeddings.create(model=EMBED_MODEL, input=question).data[0].embedding
 
     # Step 2: Search ChromaDB for relevant chunks
     results = search(query_embedding, top_k=TOP_K)

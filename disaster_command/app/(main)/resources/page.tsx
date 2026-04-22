@@ -13,21 +13,43 @@ import { KnowledgeBaseCard } from "@/components/resources/KnowledgeBaseCard";
 import { AskKnowledgeBaseCard } from "@/components/resources/AskKnowledgeBaseCard";
 import Link from "next/link";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
 export default function ResourcesPage() {
   const [isRagReady, setIsRagReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [vectorCount, setVectorCount] = useState(0);
 
-  const handleFeedToRAG = () => {
+  const handleFeedToRAG = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+    try {
+      const res = await fetch(`${API_BASE}/api/rag/process`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("RAG process failed:", err.detail);
+        return;
+      }
+      const data = await res.json();
+      setVectorCount(data.embeddings_created);
       setIsRagReady(true);
-      setVectorCount(247);
-    }, 3000);
+    } catch (e) {
+      console.error("RAG process error:", e);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/rag/reset`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("RAG reset failed:", err.detail);
+        return;
+      }
+    } catch (e) {
+      console.error("RAG reset error:", e);
+    }
     setIsRagReady(false);
     setVectorCount(0);
   };

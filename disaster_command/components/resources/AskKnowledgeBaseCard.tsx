@@ -79,27 +79,41 @@ export function AskKnowledgeBaseCard({
     setQuery("");
     setIsProcessing(true);
 
-    setTimeout(() => {
-      const responses = [
-        "Based on the Disaster Response Strategy documents, I recommend initiating Tier-2 escalation protocols for scenarios involving more than 3 affected sectors. The key decision points are: establish command chain within 5 minutes, deploy reconnaissance drones immediately, and triangulate survivor locations using thermal + visual feeds.",
-        "According to the Survivor Detection & Rescue Coordination Guide, the optimal drone swarm configuration for urban disaster zones is: 4 units in scanning mode with 15-minute battery reserves, 2 units in relay mode, and 1 unit on standby for medical supply delivery.",
-        "The Environment & Hazard Knowledge base indicates that seismic activity above 5.0 magnitude typically requires evacuation protocols for a 2km radius. Structural collapse probability increases by 340% for buildings older than 30 years without seismic retrofitting.",
-        "Based on Decision-Making Heuristics, when facing ambiguous survivor signals, prioritize false-positive tolerance over missed detections. The recommended approach is: scan → mark → verify → rescue within 8-minute windows.",
-      ];
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+      const res = await fetch(`${apiBase}/api/rag/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: query }),
+      });
 
-      const randomResponse =
-        responses[Math.floor(Math.random() * responses.length)];
+      let content: string;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Unknown error" }));
+        content = `Error: ${err.detail ?? "Failed to get a response."}`;
+      } else {
+        const data = await res.json();
+        content = data.answer;
+      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: randomResponse,
+        content,
         timestamp: new Date(),
       };
-
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (e) {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Network error — could not reach the knowledge base.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } finally {
       setIsProcessing(false);
-    }, 2000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -171,9 +185,9 @@ export function AskKnowledgeBaseCard({
                 </p>
                 <div className="mt-4 space-y-2 text-left w-full max-w-sm">
                   {[
-                    "What are the Tier-2 escalation protocols?",
-                    "How should I configure drone swarms?",
-                    "What evacuation radius is recommended?",
+                    "What are the key heuristics for disaster resource optimization?",
+                    "How should drone fleets be coordinated to locate survivors?",
+                    "What environmental hazards affect safe drone deployment?",
                   ].map((suggestion, i) => (
                     <button
                       key={i}

@@ -1,6 +1,7 @@
 import os
-from backend.rag.embedder import process_documents
-from backend.rag.vector_store import (
+from rag.embedder import process_documents
+from rag.retriever import answer_question
+from rag.vector_store import (
     load_into_chroma,
     reset_collection,
     get_count,
@@ -8,7 +9,7 @@ from backend.rag.vector_store import (
     get_collection_info,
 )
 
-DOCS_FOLDER = os.path.join(os.path.dirname(__file__), "../../public/documents")
+DOCS_FOLDER = os.path.join(os.path.dirname(__file__), "../../documents")
 
 
 def get_pdf_files() -> list[str]:
@@ -86,6 +87,23 @@ def service_status() -> dict:
       }
     """
     return get_collection_info()
+
+
+def service_query(question: str) -> dict:
+    """
+    Run a RAG query against the knowledge base.
+
+    Returns:
+      {
+        answer: str,
+        sources: [{ source, page, score, chunk_index }],
+        context_used: str
+      }
+    """
+    if not is_ready():
+        raise ValueError("Knowledge base is empty — process documents first")
+
+    return answer_question(question)
 
 
 def service_reset() -> dict:

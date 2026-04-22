@@ -138,3 +138,18 @@ def get_detailed_fleet_info():
 
     conn.close()
     return {"drones": drones}
+
+
+def fleet_status():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM drones")
+    rows = cursor.fetchall()
+
+    operational_assets = len(rows)
+    return{
+        "operational_assets":operational_assets,
+        "total_swarm_power": 88.5,
+        "maintenance_required": 0, 
+        "ai_sync_status": "Functional"
+    }

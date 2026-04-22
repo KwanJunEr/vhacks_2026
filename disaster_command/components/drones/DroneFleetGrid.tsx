@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DroneCard from "./DroneCard";
 import { Loader2, Search, Filter } from "lucide-react";
+
+const FALLBACK_COLORS = ["blue", "red", "purple", "yellow", "green"];
 
 export function DroneFleetGrid() {
   const [drones, setDrones] = useState<any[]>([]);
@@ -13,9 +15,7 @@ export function DroneFleetGrid() {
   useEffect(() => {
     const fetchFleet = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:8000/api/drones/detailed_fleet",
-        );
+        const response = await fetch("http://localhost:8000/api/drones/detailed_fleet");
         const data = await response.json();
         setDrones(data.drones || []);
       } catch (err) {
@@ -40,8 +40,8 @@ export function DroneFleetGrid() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
-        <p className="text-[#00ff88] font-mono text-sm tracking-widest animate-pulse">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+        <p className="text-blue-500 font-mono text-sm tracking-widest animate-pulse">
           SYNCHRONIZING SWARM DATA...
         </p>
       </div>
@@ -52,23 +52,23 @@ export function DroneFleetGrid() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="relative w-full max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2a6644]" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400" />
           <input
             type="text"
             placeholder="Search swarm by ID, Name or Brand..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#0a1a10] border border-[#0d2e18] rounded-xl py-3 pl-12 pr-4 text-[#e8fff4] text-sm focus:outline-none focus:border-[#00ff88]/50 focus:ring-1 focus:ring-[#00ff88]/20 transition-all placeholder:text-[#1a3d24]"
+            className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-800 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400 shadow-sm"
           />
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#0a1a10] border border-[#0d2e18] rounded-xl text-[#aaccbb] text-xs font-bold hover:bg-[#0d2e18] transition-all">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-bold hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm">
             <Filter className="w-3.5 h-3.5" />
             FILTER STATUS
           </button>
-          <div className="h-8 w-px bg-[#0d2e18]" />
-          <span className="text-[#3a7755] text-[10px] font-bold uppercase tracking-widest">
+          <div className="h-8 w-px bg-slate-200" />
+          <span className="text-blue-500 text-[10px] font-bold uppercase tracking-widest">
             {filteredDrones.length} Assets Active
           </span>
         </div>
@@ -79,7 +79,7 @@ export function DroneFleetGrid() {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
       >
         <AnimatePresence>
-          {filteredDrones.map((drone) => (
+          {filteredDrones.map((drone, index) => (
             <motion.div
               key={drone.id}
               layout
@@ -97,6 +97,7 @@ export function DroneFleetGrid() {
                 battery={drone.battery}
                 status={drone.status}
                 health={drone.health}
+                color={drone.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length]}
               />
             </motion.div>
           ))}

@@ -17,6 +17,7 @@ import {
   X,
   Search,
   Activity,
+  BrainCircuit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserDropdown } from "@/components/login/UserDropdown";
@@ -25,8 +26,8 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Radar },
   { name: "Disaster Events", href: "/events", icon: MapIcon },
   { name: "Drone Fleet", href: "/fleet", icon: Plane },
-  { name: "Datasets", href: "/datasets", icon: Database },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Computer Vision", href: "/datasets", icon: BrainCircuit },
+  { name: "Predictive", href: "/analytics", icon: BarChart3 },
   { name: "Resources", href: "/resources", icon: BookOpenText },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },

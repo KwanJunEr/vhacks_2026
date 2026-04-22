@@ -28,7 +28,7 @@ const navigation = [
   { name: "Drone Fleet", href: "/fleet", icon: Plane },
   { name: "Computer Vision", href: "/datasets", icon: BrainCircuit },
   { name: "Predictive", href: "/analytics", icon: BarChart3 },
-  { name: "Resources", href: "/resources", icon: BookOpenText },
+  { name: "Knowledge", href: "/resources", icon: BookOpenText },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

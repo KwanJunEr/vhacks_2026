@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+
+from api.core.time_utils import get_default_timestamp, normalize_feed_timestamp
 
 
 class SwarmMetrics(BaseModel):
@@ -17,3 +19,14 @@ class AICoordinationAccuracyPoint(BaseModel):
 
 class AICoordinationAccuracyResponse(BaseModel):
     data: list[AICoordinationAccuracyPoint]
+
+
+class FeedItem(BaseModel):
+    title: str
+    message: str | None = None
+    timestamp: str = Field(default_factory=get_default_timestamp)
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def normalize_timestamp(cls, timestamp: str | None) -> str:
+        return normalize_feed_timestamp(timestamp)

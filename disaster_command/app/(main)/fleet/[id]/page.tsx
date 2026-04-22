@@ -9,43 +9,11 @@ import DroneSpecsTab from "@/components/drones/tabs/DroneSpecsTab";
 import DroneSignalHealthTab from "@/components/drones/tabs/DroneSignalHealthTab";
 import DroneRotorTab from "@/components/drones/tabs/DroneRotorTab";
 import DronePredictiveTab from "@/components/drones/tabs/DronePredictiveTab";
+import { DroneDetail } from "@/types/DroneDetails";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
-type DroneDetail = {
-  id: string;
-  drone_name: string;
-  status: string;
-  battery_level: number;
-  health_status?: string;
-  current_x?: number;
-  current_y?: number;
-  description?: string;
-  brand_name?: string;
-  weight_class?: string;
-  max_speed?: number;
-  weight?: number;
-  motors?: number;
-  range_km?: number;
-  flight_time_min?: number;
-  wind_resistance?: string;
-  payload?: string;
-  flight_controller?: number;
-  gps_module?: number;
-  imu_gyro?: number;
-  battery_mgmt?: number;
-  gimbal_control?: number;
-  comms_link?: number;
-  rotor_1_rpm?: number;
-  rotor_2_rpm?: number;
-  rotor_3_rpm?: number;
-  rotor_4_rpm?: number;
-  last_maintenance?: string;
-  last_updated?: string;
-  color?: string;
-  altitude?: number;
-  airspeed?: number;
-};
+
 
 type TabId = "basic" | "specs" | "signal" | "rotors" | "predictive";
 
@@ -207,6 +175,8 @@ export default function DroneDetailPage() {
                 health_status={drone.health_status}
                 flight_controller={drone.flight_controller}
                 gps_module={drone.gps_module}
+                data = {drone}
+                
               />
             )}
           </div>

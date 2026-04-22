@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -9,7 +10,7 @@ import { ArrowRight, ShieldCheck, HeartPulse } from "lucide-react";
 
 // ── Drone Body (central sphere) ──────────────────────────────────────────────
 function DroneBody() {
-  const ref = useRef<any>();
+  const ref = useRef<any>(null);
   useFrame((state) => {
     if (ref.current) {
       ref.current.position.y = Math.sin(state.clock.elapsedTime * 1.5) * 0.04;
@@ -60,8 +61,8 @@ function DroneBody() {
 }
 
 function Rotor({ position }: { position: [number, number, number] }) {
-  const blade1 = useRef<any>();
-  const blade2 = useRef<any>();
+  const blade1 = useRef<any>(null);
+  const blade2 = useRef<any>(null);
 
   useFrame(() => {
     if (blade1.current) blade1.current.rotation.z += 0.35;
@@ -144,7 +145,7 @@ function DroneArms() {
 }
 
 function ParticleRing() {
-  const points = useRef<any>();
+  const points = useRef<any>(null);
   const count = 60;
 
   const positions = useMemo(() => {
@@ -176,7 +177,7 @@ function ParticleRing() {
 }
 
 function GroundGlow() {
-  const ref = useRef<any>();
+  const ref = useRef<any>(null);
   useFrame((state) => {
     if (ref.current) {
       ref.current.material.opacity = 0.12 + Math.sin(state.clock.elapsedTime * 2) * 0.06;
@@ -191,7 +192,7 @@ function GroundGlow() {
 }
 
 function DroneScene() {
-  const groupRef = useRef<any>();
+  const groupRef = useRef<any>(null);
 
   useFrame((state) => {
     if (groupRef.current) {

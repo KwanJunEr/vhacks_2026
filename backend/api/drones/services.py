@@ -140,6 +140,50 @@ def get_detailed_fleet_info():
     return {"drones": drones}
 
 
+def get_drone_by_id(drone_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM drones WHERE id = ?", (drone_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    row = dict(row)
+    return {
+        "id": str(row["id"]),
+        "drone_name": row.get("drone_name") or f"Drone-{row['id']}",
+        "status": row.get("status") or "idle",
+        "battery_level": int(row.get("battery_level") or 0),
+        "health_status": row.get("health_status"),
+        "current_x": row.get("current_x"),
+        "current_y": row.get("current_y"),
+        "description": row.get("description"),
+        "brand_name": row.get("brand_name"),
+        "weight_class": row.get("weight_class"),
+        "max_speed": row.get("max_speed"),
+        "weight": row.get("weight"),
+        "motors": row.get("motors"),
+        "range_km": row.get("range_km"),
+        "flight_time_min": row.get("flight_time_min"),
+        "wind_resistance": row.get("wind_resistance"),
+        "payload": row.get("payload"),
+        "flight_controller": row.get("flight_controller"),
+        "gps_module": row.get("gps_module"),
+        "imu_gyro": row.get("imu_gyro"),
+        "battery_mgmt": row.get("battery_mgmt"),
+        "gimbal_control": row.get("gimbal_control"),
+        "comms_link": row.get("comms_link"),
+        "rotor_1_rpm": row.get("rotor_1_rpm"),
+        "rotor_2_rpm": row.get("rotor_2_rpm"),
+        "rotor_3_rpm": row.get("rotor_3_rpm"),
+        "rotor_4_rpm": row.get("rotor_4_rpm"),
+        "last_maintenance": row.get("last_maintenance"),
+        "last_updated": row.get("last_updated"),
+        "color": row.get("color") or "blue",
+        "altitude": row.get("altitude"),
+        "airspeed": row.get("airspeed"),
+    }
+
 def fleet_status():
     conn = get_db_connection()
     cursor = conn.cursor()

@@ -59,45 +59,6 @@ function daysSince(raw?: string | null) {
   }
 }
 
-function mockEvaluation(
-  battery: number,
-  health: string,
-  fc?: number | null,
-  gps?: number | null,
-) {
-  const overallScore = Math.round(((fc ?? 90) + (gps ?? 90) + battery) / 3);
-  if (overallScore >= 80 && health !== "critical") {
-    return {
-      status: "pass",
-      score: overallScore,
-      title: "Drone Operational",
-      summary:
-        "All critical systems are within acceptable parameters. Drone is cleared for deployment.",
-      items: [
-        { label: "Flight readiness", pass: true },
-        { label: "Battery reserve", pass: battery > 40 },
-        { label: "Flight controller", pass: (fc ?? 0) >= 80 },
-        { label: "GPS lock", pass: (gps ?? 0) >= 80 },
-        { label: "Health status", pass: health !== "critical" },
-      ],
-    };
-  }
-  return {
-    status: "warn",
-    score: overallScore,
-    title: "Maintenance Recommended",
-    summary:
-      "One or more systems are degraded. Schedule maintenance before next deployment.",
-    items: [
-      { label: "Flight readiness", pass: false },
-      { label: "Battery reserve", pass: battery > 40 },
-      { label: "Flight controller", pass: (fc ?? 0) >= 80 },
-      { label: "GPS lock", pass: (gps ?? 0) >= 80 },
-      { label: "Health status", pass: health !== "critical" },
-    ],
-  };
-}
-
 export default function DronePredictiveTab({
   drone_name,
   last_maintenance,

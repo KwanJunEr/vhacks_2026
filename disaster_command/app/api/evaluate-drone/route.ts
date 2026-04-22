@@ -48,6 +48,18 @@ Return this exact JSON format with no other text:
     if (!text) throw new Error("No valid response from AI");
 
     const parsed = JSON.parse(text);
+
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+    fetch(`${apiBase}/api/drones/evaluations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        drone_id: drone.id ? String(drone.id) : null,
+        ...parsed,
+      }),
+    }).catch(() => {});
+
     return NextResponse.json(parsed);
   } catch (err) {
     return NextResponse.json(

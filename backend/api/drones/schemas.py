@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Any, List, Optional
 
 class TelemetryItem(BaseModel):
     name: str
@@ -79,3 +79,26 @@ class DroneDetailItem(BaseModel):
     color: Optional[str]
     altitude: Optional[float]
     airspeed: Optional[float]
+    years_of_service:int
+
+
+class DroneEvaluationCreate(BaseModel):
+    drone_id: Optional[str] = None
+    status: str
+    score: int
+    title: str
+    summary: str
+    reasoning: str
+    items: List[Any] = []
+
+
+class DroneEvaluationSaved(BaseModel):
+    id: int
+    drone_id: Optional[str]
+    status: str
+    score: int
+    title: str
+    summary: str
+    reasoning: str
+    items_json: str
+    created_at: Optional[str]

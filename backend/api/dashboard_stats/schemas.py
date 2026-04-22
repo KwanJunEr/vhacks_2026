@@ -21,6 +21,16 @@ class AICoordinationAccuracyResponse(BaseModel):
     data: list[AICoordinationAccuracyPoint]
 
 
+class AIConfidenceMatrixItem(BaseModel):
+    label: str
+    value: float
+
+
+class AIConfidenceMatrixResponse(BaseModel):
+    global_score: float
+    items: list[AIConfidenceMatrixItem]
+
+
 class FeedItem(BaseModel):
     title: str
     message: str | None = None
@@ -30,3 +40,7 @@ class FeedItem(BaseModel):
     @classmethod
     def normalize_timestamp(cls, timestamp: str | None) -> str:
         return normalize_feed_timestamp(timestamp)
+
+
+class CriticalOperationsFeedResponse(BaseModel):
+    items: list[FeedItem]

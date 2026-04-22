@@ -1,41 +1,45 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, CheckCircle2, AlertCircle } from "lucide-react";
 
-const alerts = [
-  {
-    id: 1,
-    type: "success",
-    title: "Scanned all grids",
-    time: "2m ago",
-    desc: "Grid sector A1-F9 fully processed with no thermal anomalies.",
-  },
-  {
-    id: 2,
-    type: "critical",
-    title: "Survivor detected",
-    time: "5m ago",
-    desc: "Thermal signature match in Sector C4. Swarm re-routing for visual confirmation.",
-  },
-  {
-    id: 3,
-    type: "warning",
-    title: "Connectivity drop",
-    time: "12m ago",
-    desc: "Node-43 mesh signal weak. Deploying relay drone.",
-  },
-  {
-    id: 4,
-    type: "info",
-    title: "Supply delivered",
-    time: "18m ago",
-    desc: "Medical package delivered to LZ Bravo.",
-  },
-];
+type FeedItem = {
+  title: string;
+  message: string | null;
+  timestamp: string;
+};
 
 export function CriticalAlertsLog() {
+  const [items, setItems] = useState<FeedItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCriticalLog = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/critical-operations-log`,
+        );
+        const json = await res.json();
+        setItems(Array.isArray(json?.items) ? json.items : []);
+      } catch (error) {
+        console.error("Failed to fetch critical operations log", error);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCriticalLog();
+  }, []);
+
+  const getAlertType = (index: number) => {
+    if (index === 0) return "success";
+    if (index === 1) return "critical";
+    if (index === 2) return "warning";
+    return "info";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -47,14 +51,19 @@ export function CriticalAlertsLog() {
           Critical Operations Log
         </h3>
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Real-time Feed
+          Backend Feed
         </span>
       </div>
 
       <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar max-h-[500px]">
-        {alerts.map((alert, index) => (
+        {loading ? (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 px-4 py-6 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Loading backend operations log
+          </div>
+        ) : items.length > 0 ? (
+          items.map((alert, index) => (
           <motion.div
-            key={alert.id}
+            key={`${alert.title}-${index}`}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
@@ -62,18 +71,18 @@ export function CriticalAlertsLog() {
           >
             <div
               className={`mt-1 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                alert.type === "critical"
+                getAlertType(index) === "critical"
                   ? "bg-red-100 text-red-600"
-                  : alert.type === "success"
+                  : getAlertType(index) === "success"
                     ? "bg-emerald-100 text-emerald-600"
-                    : alert.type === "warning"
+                    : getAlertType(index) === "warning"
                       ? "bg-amber-100 text-amber-600"
                       : "bg-blue-100 text-blue-600"
               }`}
             >
-              {alert.type === "critical" ? (
+              {getAlertType(index) === "critical" ? (
                 <AlertCircle className="w-4 h-4" />
-              ) : alert.type === "success" ? (
+              ) : getAlertType(index) === "success" ? (
                 <CheckCircle2 className="w-4 h-4" />
               ) : (
                 <Bell className="w-4 h-4" />
@@ -85,15 +94,20 @@ export function CriticalAlertsLog() {
                   {alert.title}
                 </h4>
                 <span className="text-[10px] font-bold text-slate-400">
-                  {alert.time}
+                  {alert.timestamp}
                 </span>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed">
-                {alert.desc}
+                {alert.message ?? "No additional details available."}
               </p>
             </div>
           </motion.div>
-        ))}
+          ))
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 px-4 py-6 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            No backend operations log available
+          </div>
+        )}
       </div>
     </motion.div>
   );

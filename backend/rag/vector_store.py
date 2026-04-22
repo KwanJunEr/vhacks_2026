@@ -118,7 +118,10 @@ def reset_collection():
     Called when user clicks Reset in the UI.
     """
     print("🗑️  Resetting ChromaDB collection...")
-    chroma_client.delete_collection(COLLECTION_NAME)
+    try:
+        chroma_client.delete_collection(COLLECTION_NAME)
+    except Exception:
+        pass  # collection didn't exist yet — nothing to delete
     chroma_client.get_or_create_collection(
         name=COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"}

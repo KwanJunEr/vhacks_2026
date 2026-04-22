@@ -8,6 +8,7 @@ from pydantic import BaseModel
 class ProcessResponse(BaseModel):
     success: bool
     embeddings_created: int
+    documents_processed: int
     message: str
 
 
@@ -22,6 +23,7 @@ class StatusResponse(BaseModel):
 class ResetResponse(BaseModel):
     success: bool
     message: str
+    vector_count: int
 
 
 # ─────────────────────────────────────────

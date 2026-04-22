@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { MapPin, ShieldCheck, Tag, Cpu, Layers, AlignLeft } from "lucide-react";
+import { MapPin, ShieldCheck, Tag, Cpu, Layers, AlignLeft, CalendarClock } from "lucide-react";
 
 interface DroneBasicInfoTabProps {
   id: string;
@@ -15,6 +15,7 @@ interface DroneBasicInfoTabProps {
   description?: string | null;
   brand_name?: string | null;
   weight_class?: string | null;
+  years_of_service?:number | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -57,6 +58,7 @@ export default function DroneBasicInfoTab({
   description,
   brand_name,
   weight_class,
+  years_of_service
 }: DroneBasicInfoTabProps) {
   const statusClass = STATUS_COLORS[status?.toLowerCase()] ?? "bg-slate-100 text-slate-600";
   const healthKey = health_status?.toLowerCase() ?? "optimal";
@@ -109,6 +111,11 @@ export default function DroneBasicInfoTab({
               ? `${current_x.toFixed(2)}, ${current_y.toFixed(2)}`
               : "—"
           }
+        />
+        <InfoRow
+          icon={CalendarClock}
+          label="Years of Service"
+          value={years_of_service != null ? `${years_of_service} yr${years_of_service !== 1 ? "s" : ""}` : null}
         />
         <InfoRow icon={AlignLeft} label="Description" value={description} />
       </div>

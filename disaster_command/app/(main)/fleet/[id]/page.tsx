@@ -131,6 +131,7 @@ export default function DroneDetailPage() {
                 description={drone.description}
                 brand_name={drone.brand_name}
                 weight_class={drone.weight_class}
+                years_of_service={drone.years_of_service}
               />
             )}
 

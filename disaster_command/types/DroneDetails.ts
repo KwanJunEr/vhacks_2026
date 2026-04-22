@@ -31,4 +31,5 @@ export type DroneDetail = {
   color?: string;
   altitude?: number;
   airspeed?: number;
+  years_of_service?: number;
 };

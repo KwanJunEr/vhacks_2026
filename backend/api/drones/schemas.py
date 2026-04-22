@@ -79,7 +79,7 @@ class DroneDetailItem(BaseModel):
     color: Optional[str]
     altitude: Optional[float]
     airspeed: Optional[float]
-    years_of_service:int
+    years_of_service: Optional[int]
 
 
 class DroneEvaluationCreate(BaseModel):

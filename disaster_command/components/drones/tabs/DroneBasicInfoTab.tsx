@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React from "react";
@@ -33,7 +34,7 @@ const HEALTH_COLORS: Record<string, { bar: string; label: string }> = {
   critical: { bar: "bg-red-500",     label: "text-red-600" },
 };
 
-function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: React.ReactNode }) {
+function InfoRow({ icon: Icon, label, value }: { icon: React.ComponentType<any>; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-slate-100 last:border-0">
       <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0 mt-0.5">

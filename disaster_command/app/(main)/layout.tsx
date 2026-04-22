@@ -26,7 +26,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Radar },
   { name: "Disaster Events", href: "/events", icon: MapIcon },
   { name: "Drone Fleet", href: "/fleet", icon: Plane },
-  { name: "Computer Vision", href: "/datasets", icon: BrainCircuit },
+  { name: "Computer Vision", href: "/computer-vision", icon: BrainCircuit },
   { name: "Predictive", href: "/analytics", icon: BarChart3 },
   { name: "Knowledge", href: "/resources", icon: BookOpenText },
   { name: "Reports", href: "/reports", icon: FileText },

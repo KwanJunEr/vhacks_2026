@@ -66,20 +66,20 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
             Disaster Command Grid Dashboard
           </h1>
-          <p className="text-slate-500 font-medium">
+          <p className="text-slate-500 font-medium text-sm md:text-base">
             Real-time Multi-Agent Swarm Intelligence & Response
           </p>
         </div>
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatsCard
           title="Swarm Efficiency"
           value={`${metrics?.swarm_efficiency ?? 0}%`}
@@ -115,7 +115,7 @@ export default function DashboardPage() {
         />
 
         <StatsCard
-          title="Critical Events"
+          title="Past Disasters"
           value={metrics?.critical_events ?? 0}
           change="+1"
           color="red"
@@ -123,39 +123,39 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Primary Analytics Row - Timeline & Accuracy 50/50 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[450px] py-4">
-        <div className="h-full">
+      {/* Primary Analytics Row - each child has its own height so stacking on mobile works */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="h-100 lg:h-112.5">
           <MissionGanttChart />
         </div>
-        <div className="h-full">
+        <div className="h-100 lg:h-112.5">
           <AICoordinationTrend />
         </div>
       </div>
 
-      {/* Fleet & Battery Row - New Line */}
-      <div className="w-full h-[800px] pt-15 pb-2">
+      {/* Fleet & Battery Row */}
+      <div className="w-full">
         <FleetDistribution />
       </div>
 
-      {/* Operations Log - Column Data */}
+      {/* Operations Log */}
       <div className="w-full">
         <CriticalAlertsLog />
       </div>
 
       {/* Secondary Operational Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[450px]">
-        <div className="lg:col-span-2 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 h-100 lg:h-112.5">
           <ConfidenceScoreGrid />
         </div>
-        <div className="lg:col-span-1 h-full">
+        <div className="lg:col-span-1 h-100 lg:h-112.5">
           <ActiveFleetManagement />
         </div>
       </div>
 
-      {/* Map / Globe Section (Moved to Bottom or as a separate section) */}
-      <div className="grid grid-cols-1 gap-6 h-[500px]">
-        <div className="glass-panel rounded-2xl border border-slate-200 flex flex-col relative overflow-hidden bg-white shadow-sm">
+      {/* Map / Globe Section — 2/3 globe + 1/3 activity panel side by side on lg+ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 glass-panel rounded-2xl border border-slate-200 flex flex-col relative overflow-hidden bg-white shadow-sm h-125">
           {/* Overlay: Simulation Panel */}
           <AnimatePresence>
             {simState !== "idle" && (
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="absolute top-6 right-6 z-20 w-80"
+                className="absolute top-6 right-6 z-20 w-72 sm:w-80"
               >
                 <div
                   className={cn(
@@ -261,8 +261,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Information Panel */}
-        <div className="lg:col-span-1 glass-panel rounded-xl border border-slate-200 p-6 flex flex-col gap-6 bg-white/70 shadow-sm relative overflow-hidden">
+        {/* Activity Panel */}
+        <div className="glass-panel rounded-xl border border-slate-200 p-6 flex flex-col gap-6 bg-white/70 shadow-sm relative overflow-hidden h-100 lg:h-125">
           {simState === "detected" && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -271,7 +271,7 @@ export default function DashboardPage() {
             />
           )}
 
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
               <Activity className="w-5 h-5 text-blue-500" /> Latest Activity
             </h3>

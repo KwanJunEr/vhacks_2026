@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   MapPin,
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
   Clock,
   RefreshCw,
   Loader2,
+  Plane,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -216,115 +217,130 @@ export default function EventsPage() {
 }
 
 function EventCard({ event }: { event: DisasterEvent }) {
+  const router = useRouter();
+
   return (
-    <Link href={`/events/${event.id}`}>
-      <div className="glass-panel p-5 rounded-lg border border-slate-200 bg-white hover:border-blue-300 hover:shadow-md transition-all group relative overflow-hidden">
-        {/* Left status stripe */}
-        <div
-          className={cn(
-            "absolute inset-y-0 left-0 w-1 transition-opacity",
-            event.status === "Critical"
-              ? "bg-gradient-to-b from-red-500 to-transparent opacity-100"
-              : event.status === "Resolved"
-              ? "bg-gradient-to-b from-emerald-500 to-transparent opacity-60"
-              : event.status === "Warning"
-              ? "bg-gradient-to-b from-amber-500 to-transparent opacity-80"
-              : "bg-gradient-to-b from-blue-500 to-transparent opacity-0 group-hover:opacity-100"
-          )}
-        />
+    <div
+      onClick={() => router.push(`/events/${event.id}`)}
+      className="glass-panel p-5 rounded-lg border border-slate-200 bg-white hover:border-blue-300 hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+    >
+      {/* Left status stripe */}
+      <div
+        className={cn(
+          "absolute inset-y-0 left-0 w-1 transition-opacity",
+          event.status === "Critical"
+            ? "bg-gradient-to-b from-red-500 to-transparent opacity-100"
+            : event.status === "Resolved"
+            ? "bg-gradient-to-b from-emerald-500 to-transparent opacity-60"
+            : event.status === "Warning"
+            ? "bg-gradient-to-b from-amber-500 to-transparent opacity-80"
+            : "bg-gradient-to-b from-blue-500 to-transparent opacity-0 group-hover:opacity-100"
+        )}
+      />
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Left: Icon + Info */}
-          <div className="flex items-start gap-4 flex-1">
-            <div
-              className={cn(
-                "p-3 rounded-lg flex items-center justify-center shadow-sm shrink-0",
-                event.status === "Critical"
-                  ? "bg-red-50 text-red-600 border border-red-100"
-                  : event.status === "Warning"
-                  ? "bg-orange-50 text-orange-600 border border-orange-100"
-                  : event.status === "Resolved"
-                  ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                  : "bg-blue-50 text-blue-600 border border-blue-100"
-              )}
-            >
-              {event.status === "Critical" ? (
-                <Activity className="w-6 h-6 animate-pulse" />
-              ) : event.status === "Resolved" ? (
-                <CheckCircle2 className="w-6 h-6" />
-              ) : (
-                <AlertTriangle className="w-6 h-6" />
-              )}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              {/* Title row */}
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors text-lg truncate">
-                  {event.name}
-                </h3>
-                <span className="text-xs px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-500 font-mono shadow-sm">
-                  {event.id}
-                </span>
-                {event.is_active === 1 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 animate-pulse">
-                    LIVE MISSION
-                  </span>
-                )}
-              </div>
-
-              {/* Location + Timing */}
-              <div className="flex items-center gap-4 text-sm text-slate-500 mb-2 flex-wrap">
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  {event.location}
-                </span>
-                <span className="flex items-center gap-1 text-xs text-slate-400 font-medium">
-                  <Clock className="w-3 h-3" />
-                  {formatDateTime(event.event_time)}
-                </span>
-                <span className="text-xs text-slate-400">
-                  Updated {formatRelative(event.last_updated)}
-                </span>
-              </div>
-
-              <p className="text-sm text-slate-600 line-clamp-1">
-                {event.description}
-              </p>
-            </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Left: Icon + Info */}
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          <div
+            className={cn(
+              "p-3 rounded-lg flex items-center justify-center shadow-sm shrink-0",
+              event.status === "Critical"
+                ? "bg-red-50 text-red-600 border border-red-100"
+                : event.status === "Warning"
+                ? "bg-orange-50 text-orange-600 border border-orange-100"
+                : event.status === "Resolved"
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                : "bg-blue-50 text-blue-600 border border-blue-100"
+            )}
+          >
+            {event.status === "Critical" ? (
+              <Activity className="w-6 h-6 animate-pulse" />
+            ) : event.status === "Resolved" ? (
+              <CheckCircle2 className="w-6 h-6" />
+            ) : (
+              <AlertTriangle className="w-6 h-6" />
+            )}
           </div>
 
-          {/* Right: Impact badge + chevron */}
-          <div className="flex items-center gap-4 md:w-auto justify-end">
-            {/* Status badge */}
-            <span
-              className={cn(
-                "text-xs font-semibold px-2.5 py-1 rounded-full border",
-                event.status === "Critical"
-                  ? "bg-red-50 text-red-700 border-red-200"
-                  : event.status === "Warning"
-                  ? "bg-amber-50 text-amber-700 border-amber-200"
-                  : event.status === "Resolved"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-blue-50 text-blue-700 border-blue-200"
-              )}
-            >
-              {event.status}
-            </span>
-
-            {event.impact && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg shadow-sm group-hover:bg-blue-50 group-hover:border-blue-100 transition-colors">
-                <BadgeCheck className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
-                <span className="text-xs font-medium text-slate-600 group-hover:text-blue-800">
-                  {event.impact}
+          <div className="flex-1 min-w-0">
+            {/* Title row */}
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors text-lg truncate">
+                {event.name}
+              </h3>
+              <span className="text-xs px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-500 font-mono shadow-sm">
+                {event.id}
+              </span>
+              {event.is_active === 1 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 animate-pulse">
+                  LIVE MISSION
                 </span>
-              </div>
-            )}
+              )}
+            </div>
 
-            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors group-hover:translate-x-1 shrink-0" />
+            {/* Location + Timing */}
+            <div className="flex items-center gap-4 text-sm text-slate-500 mb-2 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                {event.location}
+              </span>
+              <span className="flex items-center gap-1 text-xs text-slate-400 font-medium">
+                <Clock className="w-3 h-3" />
+                {formatDateTime(event.event_time)}
+              </span>
+              <span className="text-xs text-slate-400">
+                Updated {formatRelative(event.last_updated)}
+              </span>
+            </div>
+
+            <p className="text-sm text-slate-600 line-clamp-1">
+              {event.description}
+            </p>
           </div>
         </div>
+
+        {/* Right: status + impact + deploy button */}
+        <div className="flex items-center gap-3 md:w-auto justify-end flex-shrink-0">
+          <span
+            className={cn(
+              "text-xs font-semibold px-2.5 py-1 rounded-full border",
+              event.status === "Critical"
+                ? "bg-red-50 text-red-700 border-red-200"
+                : event.status === "Warning"
+                ? "bg-amber-50 text-amber-700 border-amber-200"
+                : event.status === "Resolved"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-blue-50 text-blue-700 border-blue-200"
+            )}
+          >
+            {event.status}
+          </span>
+
+          {event.impact && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg shadow-sm group-hover:bg-blue-50 group-hover:border-blue-100 transition-colors">
+              <BadgeCheck className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+              <span className="text-xs font-medium text-slate-600 group-hover:text-blue-800">
+                {event.impact}
+              </span>
+            </div>
+          )}
+
+          {event.status !== "Resolved" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/events/${event.id}`);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest shadow-md shadow-emerald-500/20 transition-colors shrink-0"
+            >
+              <Plane className="w-3.5 h-3.5" />
+              Start Deployment
+            </button>
+          )}
+
+          <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors group-hover:translate-x-1 shrink-0" />
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }

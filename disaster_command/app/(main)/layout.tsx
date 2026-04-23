@@ -42,8 +42,18 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<any>(null);
+
+  // Auto-collapse sidebar on event detail pages
+  useEffect(() => {
+    if (pathname?.includes("/events/") && pathname !== "/events") {
+      setSidebarCollapsed(true);
+    } else {
+      setSidebarCollapsed(false);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -67,18 +77,30 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto shadow-sm",
+          "fixed inset-y-0 left-0 z-50 bg-card border-r border-border flex flex-col transform transition-all duration-300 lg:translate-x-0 lg:static lg:inset-auto shadow-sm",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          sidebarCollapsed ? "w-20" : "w-64",
         )}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 h-16 border-b border-border shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+        <div className={cn(
+          "flex items-center h-16 border-b border-border shrink-0 transition-all",
+          sidebarCollapsed ? "px-4 justify-center" : "px-6 gap-3"
+        )}>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
             <Activity className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-bold text-lg tracking-tight text-foreground">
-            Command<span className="text-primary">Grid</span>
-          </span>
+          {!sidebarCollapsed && (
+            <span className="font-bold text-lg tracking-tight text-foreground whitespace-nowrap overflow-hidden">
+              Command<span className="text-primary">Grid</span>
+            </span>
+          )}
+          <button
+            className="ml-auto text-muted-foreground hover:text-foreground hidden lg:block"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
           <button
             className="ml-auto lg:hidden text-muted-foreground hover:text-foreground"
             onClick={() => setSidebarOpen(false)}
@@ -88,10 +110,15 @@ export default function DashboardLayout({
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col flex-1 overflow-y-auto py-6 px-4 gap-1">
-          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-2">
-            Main Menu
-          </div>
+        <nav className={cn(
+          "flex flex-col flex-1 overflow-y-auto py-6 gap-1 transition-all",
+          sidebarCollapsed ? "px-2 items-center" : "px-4"
+        )}>
+          {!sidebarCollapsed && (
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-2">
+              Main Menu
+            </div>
+          )}
 
           {navigation.map((item) => {
             const isActive =
@@ -105,22 +132,25 @@ export default function DashboardLayout({
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "group flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 border",
+                  "group flex items-center py-3 text-sm font-medium rounded-lg transition-all duration-200 border",
+                  sidebarCollapsed ? "px-0 justify-center w-12" : "px-4",
                   isActive
                     ? "bg-accent text-accent-foreground border-border shadow-sm"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground border-transparent",
                 )}
+                title={sidebarCollapsed ? item.name : ""}
               >
                 <Icon
                   className={cn(
-                    "mr-3 h-5 w-5 transition-colors",
+                    "h-5 w-5 transition-colors shrink-0",
+                    !sidebarCollapsed && "mr-3",
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground group-hover:text-foreground",
                   )}
                 />
-                <span className="flex-1">{item.name}</span>
-                {isActive && (
+                {!sidebarCollapsed && <span className="flex-1 whitespace-nowrap overflow-hidden">{item.name}</span>}
+                {!sidebarCollapsed && isActive && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
                 )}
               </Link>

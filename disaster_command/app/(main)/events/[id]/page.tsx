@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use, useRef, useCallback } from "react";
+import React, { useState, useEffect, use, useRef } from "react";
 import {
   MapPin,
   Terminal,
@@ -14,6 +14,10 @@ import {
   Grid3X3,
   RefreshCw,
   ChevronDown,
+  RotateCcw,
+  RotateCw,
+  Square,
+  Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -39,9 +43,14 @@ const ThreeJSGrid = dynamic(
   { ssr: false, loading: () => <CenterLoadingPlaceholder label="Loading 3D Grid..." /> }
 );
 
-const MapLibreMap = dynamic(
-  () => import("@/components/events/MapLibreMap").then((m) => m.MapLibreMap),
-  { ssr: false, loading: () => <CenterLoadingPlaceholder label="Loading Live Map..." /> }
+const GridLegend = dynamic(
+  () => import("@/components/events/ThreeJSGrid").then((m) => m.GridLegend),
+  { ssr: false }
+);
+
+const DroneGrid2D = dynamic(
+  () => import("@/components/events/DroneGrid2D").then((m) => m.DroneGrid2D),
+  { ssr: false, loading: () => <CenterLoadingPlaceholder label="Loading 2D Grid..." /> }
 );
 
 // ─── Loading placeholder ───────────────────────────────────────────────────────
@@ -50,40 +59,6 @@ function CenterLoadingPlaceholder({ label }: { label: string }) {
     <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 rounded-xl gap-3">
       <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
       <p className="text-xs text-slate-400 font-medium">{label}</p>
-    </div>
-  );
-}
-
-// ─── View Toggle ──────────────────────────────────────────────────────────────
-type MapView = "grid" | "live";
-
-function ViewToggle({ view, onChange }: { view: MapView; onChange: (v: MapView) => void }) {
-  return (
-    <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 border border-slate-200">
-      <button
-        onClick={() => onChange("grid")}
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-          view === "grid"
-            ? "bg-slate-900 text-white shadow-sm"
-            : "text-slate-500 hover:text-slate-700"
-        )}
-      >
-        <Grid3X3 className="w-3.5 h-3.5" />
-        3D Grid
-      </button>
-      <button
-        onClick={() => onChange("live")}
-        className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-          view === "live"
-            ? "bg-slate-900 text-white shadow-sm"
-            : "text-slate-500 hover:text-slate-700"
-        )}
-      >
-        <Map className="w-3.5 h-3.5" />
-        Live Map
-      </button>
     </div>
   );
 }
@@ -223,13 +198,21 @@ export default function EventDetailPage({
   const [isGenerating, setIsGenerating] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [mapView, setMapView] = useState<MapView>("grid");
   const [scenario, setScenario] = useState(SCENARIOS[0]);
+  const [activeGridTab, setActiveGridTab] = useState<"2d" | "3d">("3d");
+  const [rotationState, setRotationState] = useState<{ isRotating: boolean; direction: 1 | -1 }>({
+    isRotating: false,
+    direction: 1,
+  });
 
   // Grid data from backend
   const [gridDrones, setGridDrones] = useState<GridDrone[]>([]);
   const [gridEntities, setGridEntities] = useState<GridEntity[]>([]);
-  const [gridLoading, setGridLoading] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [event, setEvent] = useState<{
+    name: string; location: string; status: string;
+    event_time: string; is_active: number;
+  } | null>(null);
 
   // Simulation State
   const [scannedCells, setScannedCells] = useState<Set<number>>(new Set());
@@ -263,27 +246,47 @@ export default function EventDetailPage({
     ]);
   };
 
-  // ── Fetch grid data from backend ────────────────────────────────────────────
-  const fetchGridData = useCallback(async () => {
-    setGridLoading(true);
-    try {
-      const res = await fetch("/api/grid-data");
-      if (!res.ok) throw new Error("grid-data fetch failed");
-      const data = await res.json();
-      setGridDrones(data.drones ?? []);
-      setGridEntities(data.entities ?? []);
-    } catch {
-      // silently degrade — grid will be empty
-    } finally {
-      setGridLoading(false);
-    }
-  }, []);
-
+  // ── Fetch event details from backend ─────────────────────────────────────────
   useEffect(() => {
-    fetchGridData();
-    const interval = setInterval(fetchGridData, 5000);
-    return () => clearInterval(interval);
-  }, [fetchGridData]);
+    const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    fetch(`${API}/api/disaster_events/${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data) setEvent(data); })
+      .catch(() => {});
+  }, [id]);
+
+  // ── WebSocket: live entity + drone positions ──────────────────────────────────
+  useEffect(() => {
+    const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    const wsUrl = API.replace(/^https?/, (m) => (m === "https" ? "wss" : "ws")) + "/ws/grid";
+    let ws: WebSocket;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+
+    const connect = () => {
+      ws = new WebSocket(wsUrl);
+      ws.onopen = () => setWsConnected(true);
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (data.type === "grid_update") {
+            setGridDrones(data.drones ?? []);
+            setGridEntities(data.entities ?? []);
+          }
+        } catch { /* ignore parse errors */ }
+      };
+      ws.onerror = () => setWsConnected(false);
+      ws.onclose = () => {
+        setWsConnected(false);
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+    return () => {
+      clearTimeout(reconnectTimer);
+      ws?.close();
+    };
+  }, []);
 
   // ── Sim drone init ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -502,31 +505,81 @@ export default function EventDetailPage({
       </AnimatePresence>
 
       {/* ── Page Header ─────────────────────────────────────────────────── */}
-      <div className="mb-5 flex items-center justify-between gap-4 flex-shrink-0 pb-4 border-b border-slate-100">
+      <div className="mb-3 flex items-center justify-between gap-4 flex-shrink-0 pb-4 border-b border-slate-100 z-30 relative bg-white/50 backdrop-blur-sm">
         {/* Left: breadcrumb + title */}
         <div className="flex flex-col gap-0.5 min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          <div className="flex items-center gap-1.5 text-xs font-black text-slate-400 uppercase tracking-widest">
             <Link href="/events" className="hover:text-blue-600 transition-colors">
               Disaster Events
             </Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-slate-500">ID: EV-001</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="text-slate-500">ID: {id.toUpperCase()}</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            Sabah - Earthquake Alert
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+            {event?.name ?? "Loading Event…"}
             <Badge
               variant="destructive"
-              className="animate-pulse bg-red-600 px-2.5 py-0.5 text-[10px] font-black shadow-lg shadow-red-500/20"
+              className={cn(
+                "px-3 py-1 text-xs font-black shadow-lg",
+                event?.is_active
+                  ? "animate-pulse bg-red-600 shadow-red-500/20"
+                  : "bg-slate-500 shadow-none"
+              )}
             >
-              LIVE MISSION
+              {event?.is_active ? "LIVE MISSION" : event ? "RESOLVED" : "LOADING"}
             </Badge>
           </h1>
         </div>
 
-        {/* Center: scenario + deploy */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Center: scenario + deploy + Grid Controls */}
+        <div className="flex items-center gap-4 flex-shrink-0">
+          {/* Grid Controls */}
+          <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <button 
+              className={cn(
+                "p-2 hover:bg-slate-50 rounded-lg transition-colors",
+                rotationState.isRotating && rotationState.direction === -1 ? "bg-blue-50 text-blue-600" : "text-slate-500"
+              )} 
+              title="Rotate Counter-Clockwise"
+              onClick={() => setRotationState({ isRotating: true, direction: -1 })}
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button 
+              className={cn(
+                "p-2 hover:bg-slate-50 rounded-lg transition-colors",
+                rotationState.isRotating && rotationState.direction === 1 ? "bg-blue-50 text-blue-600" : "text-slate-500"
+              )} 
+              title="Rotate Clockwise"
+              onClick={() => setRotationState({ isRotating: true, direction: 1 })}
+            >
+              <RotateCw className="w-4 h-4" />
+            </button>
+            <button 
+              className={cn(
+                "p-2 hover:bg-slate-50 rounded-lg transition-colors",
+                !rotationState.isRotating ? "bg-slate-100 text-slate-900" : "text-slate-500"
+              )} 
+              title="Stop"
+              onClick={() => setRotationState(prev => ({ ...prev, isRotating: false }))}
+            >
+              <Square className="w-4 h-4" />
+            </button>
+            <button 
+              className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors" 
+              title="Replay (Reset View)"
+              onClick={() => {
+                setRotationState({ isRotating: false, direction: 1 });
+                // Re-mounting the component by toggling tab slightly or just resetting state
+                // ThreeJSGrid handles internal reset via key or props if needed
+              }}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+            <span className="text-xs font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
               Scenario:
             </span>
             <div className="relative flex items-center">
@@ -547,12 +600,12 @@ export default function EventDetailPage({
           {!isDeployed ? (
             <Button
               onClick={handleDeploy}
-              className="h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/25 gap-2"
+              className="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black uppercase tracking-widest shadow-lg shadow-emerald-500/25 gap-2"
             >
               <Plane className="w-4 h-4" /> Start Deployment
             </Button>
           ) : (
-            <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 font-black text-[10px] px-4 py-2 rounded-xl">
+            <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200 font-black text-xs px-4 py-2 rounded-xl">
               DEPLOYED
             </Badge>
           )}
@@ -561,35 +614,77 @@ export default function EventDetailPage({
         {/* Right: location + time */}
         <div className="flex items-center gap-5 text-sm text-slate-500 font-medium flex-shrink-0">
           <span className="flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-red-500" /> Ranau District, Malaysia
+            <MapPin className="w-4 h-4 text-red-500" />
+            {event?.location ?? "Loading location…"}
           </span>
           <span className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-slate-400" /> Started Just now
+            <Clock className="w-4 h-4 text-slate-400" />
+            {event?.event_time
+              ? new Date(event.event_time).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+              : "Just now"}
           </span>
         </div>
       </div>
 
-      {/* ── Command View ─────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 flex gap-4">
-        {/* Left Sidebar */}
-        <div className="w-64 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+      {/* ── Status row ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between flex-shrink-0 mb-4 px-1">
+        <div className="flex items-center gap-4">
+          <Badge className="bg-slate-900 text-white font-black text-xs uppercase tracking-widest px-4 py-2 rounded-xl">
+            Live Swarm Status
+          </Badge>
+          <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <Plane className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-xs font-black text-slate-700">{gridDrones.length} DRONES</span>
+            </div>
+            <div className="w-px h-3 bg-slate-200" />
+            <div className="flex items-center gap-1.5">
+              <UserRoundSearch className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-xs font-black text-slate-700">{gridEntities.filter(e => e.type === "survivor").length} SURVIVORS</span>
+            </div>
+          </div>
+          <span
+            className="flex items-center gap-2 text-xs font-bold"
+            title={wsConnected ? "WebSocket live" : "WebSocket disconnected — reconnecting…"}
+          >
+            <span className={cn("w-2 h-2 rounded-full", wsConnected ? "bg-emerald-500 animate-pulse" : "bg-red-400")} />
+            <span className={wsConnected ? "text-emerald-600" : "text-red-500"}>
+              {wsConnected ? "SYSTEM ONLINE" : "SYSTEM OFFLINE"}
+            </span>
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+           <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold px-3 py-1">
+            Active Drones: {gridDrones.length}
+          </Badge>
+          <Badge variant="outline" className="border-slate-200 text-slate-500 font-bold px-3 py-1">
+            Tactical Entities: {gridEntities.length}
+          </Badge>
+        </div>
+      </div>
+
+      {/* ── Main 3-Column Layout ───────────────────────────────────────── */}
+      <div className="flex-1 grid grid-cols-12 gap-6 min-h-0 overflow-hidden pb-4">
+        
+        {/* Left Column (2/12) - Incident & Sensors */}
+        <div className="col-span-12 lg:col-span-2 flex flex-col gap-4 overflow-y-auto pr-1 scrollbar-hide">
           {/* Incident Reporting */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Incident Reporting
             </h3>
-            <div className="flex items-center gap-2 mb-3 text-xs font-bold text-slate-500 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+            <div className="flex items-center gap-2 mb-4 text-xs font-bold text-slate-500 bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
               <div className="w-2 h-2 rounded-full bg-slate-300 animate-pulse" />
               STANDBY
             </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
               Report Event:
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {["🔥 Fire", "💨 Smoke", "🌍 Earthquake", "🧍 Survivor", "🌊 Flood Zone", "🏚 Collapse", "☢ Biohazard"].map((evt) => (
+              {["🔥 Fire", "💨 Smoke", "🌍 Quake", "🧍 Survivor", "🌊 Flood", "🏚 Collapse"].map((evt) => (
                 <button
                   key={evt}
-                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors border border-slate-200"
+                  className="text-[10px] font-black px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors border border-slate-200 uppercase tracking-tighter"
                 >
                   {evt}
                 </button>
@@ -598,203 +693,181 @@ export default function EventDetailPage({
           </div>
 
           {/* Sensor Telemetry */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
               <Zap className="w-3.5 h-3.5 text-blue-500" /> Sensor Telemetry
             </h3>
-            <div className="h-28 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-100 gap-1">
-              <Thermometer className="w-6 h-6 text-slate-300" />
-              <p className="text-[10px] font-bold text-slate-400">No Thermal Detections</p>
-              <p className="text-[9px] text-slate-300">Run scan to populate</p>
+            <div className="h-32 flex flex-col items-center justify-center bg-slate-50 rounded-lg border border-slate-100 gap-2 text-center">
+              <RefreshCw className="w-5 h-5 text-slate-300 animate-spin-slow" />
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Active Telemetry</p>
+                <p className="text-[9px] text-slate-300 font-bold">Waiting for mission start...</p>
+              </div>
             </div>
-          </div>
-
-          {/* Infrastructure */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">
-              Infrastructure
-            </h3>
-            {[
-              { icon: "⚡", name: "Charging Station", sub: "Power Hub" },
-              { icon: "📦", name: "Supply Depot", sub: "Logistics Node" },
-            ].map((item) => (
-              <div key={item.name} className="flex items-center gap-2 py-1.5">
-                <span className="text-base">{item.icon}</span>
-                <div>
-                  <p className="text-xs font-bold text-slate-700">{item.name}</p>
-                  <p className="text-[10px] text-slate-400">{item.sub}</p>
-                </div>
-              </div>
-            ))}
-            <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-widest mt-3 mb-2">
-              Sectors
-            </h3>
-            {["SEC-1 - SCHOOL", "SEC-2 - INDUSTRIAL", "SEC-3 - RESIDENTIAL", "SEC-4 - COMMERCIAL"].map((s) => (
-              <div key={s} className="flex items-center gap-2 py-1">
-                <div className="w-4 h-4 rounded-sm bg-amber-400/20 border border-amber-400/40 flex items-center justify-center">
-                  <span className="text-[8px] font-black text-amber-600">i</span>
-                </div>
-                <p className="text-[10px] text-slate-500 font-medium">{s}</p>
-              </div>
-            ))}
           </div>
         </div>
 
-        {/* Center: Toggle + View */}
-        <div className="flex-1 min-w-0 flex flex-col gap-3">
-          {/* Toggle bar */}
-          <div className="flex items-center justify-between flex-shrink-0">
-            <ViewToggle view={mapView} onChange={setMapView} />
-            <div className="flex items-center gap-2">
-              {gridLoading && (
-                <span className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium">
-                  <RefreshCw className="w-3 h-3 animate-spin" /> Syncing...
-                </span>
-              )}
+        {/* Center Column (7/12) - 3D & 2D Grid Tabs */}
+        <div className="col-span-12 lg:col-span-7 flex flex-col gap-4 min-h-0">
+          <div className="flex items-center justify-between">
+            {/* Grid Tabs Navigation */}
+            <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 border border-slate-200 self-start shadow-sm">
               <button
-                onClick={fetchGridData}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                title="Refresh grid data"
+                onClick={() => setActiveGridTab("3d")}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-black transition-all uppercase tracking-widest",
+                  activeGridTab === "3d"
+                    ? "bg-slate-900 text-white shadow-md"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                )}
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <Grid3X3 className="w-4 h-4" />
+                3D View
               </button>
-              <Badge className="bg-slate-900 text-white font-black text-[9px] uppercase tracking-widest px-3 py-1.5">
-                Active Fleet: {gridDrones.length}
-              </Badge>
+              <button
+                onClick={() => setActiveGridTab("2d")}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-2 rounded-lg text-xs font-black transition-all uppercase tracking-widest",
+                  activeGridTab === "2d"
+                    ? "bg-slate-900 text-white shadow-md"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                )}
+              >
+                <Map className="w-4 h-4" />
+                2D Tactical
+              </button>
             </div>
+            
+            <Badge variant="outline" className="border-blue-200 text-blue-600 font-black uppercase tracking-tighter bg-blue-50/50">
+              {activeGridTab.toUpperCase()} Mode Active
+            </Badge>
           </div>
 
-          {/* View panel */}
-          <div className="flex-1 min-h-0">
+          {/* Grid Content Area */}
+          <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative min-h-[750px]">
             <AnimatePresence mode="wait">
-              {mapView === "grid" ? (
+              {activeGridTab === "3d" ? (
                 <motion.div
-                  key="grid"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  key="3d-grid"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
                   className="w-full h-full"
                 >
-                  <ThreeJSGrid drones={gridDrones} entities={gridEntities as GridEntity[]} />
+                  <ThreeJSGrid 
+                    drones={gridDrones} 
+                    entities={gridEntities as GridEntity[]} 
+                    rotationState={rotationState}
+                    onRotationEnd={() => setRotationState(prev => ({ ...prev, isRotating: false }))}
+                  />
                 </motion.div>
               ) : (
                 <motion.div
-                  key="live"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  key="2d-grid"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
                   className="w-full h-full"
                 >
-                  <MapLibreMap drones={gridDrones} entities={gridEntities as GridEntity[]} />
+                  <DroneGrid2D drones={gridDrones} entities={gridEntities as GridEntity[]} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
 
-        {/* Right Sidebar — Swarm Task Matrix + Live Activity Log */}
-        <div className="w-72 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+        {/* Right Column (3/12) - Swarm Matrix & Logs */}
+        <div className="col-span-12 lg:col-span-3 flex flex-col gap-4 overflow-y-auto pl-1 scrollbar-hide">
           {/* Swarm Task Matrix */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Cpu className="w-3.5 h-3.5 text-blue-500" /> Swarm Task Matrix
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-[10px]">
+              <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="text-left font-black text-slate-400 pb-2 pr-2">Drone</th>
-                    <th className="text-left font-black text-slate-400 pb-2 pr-2">Task</th>
-                    <th className="text-left font-black text-slate-400 pb-2">Pos</th>
+                    <th className="text-left font-black text-slate-400 pb-2 pr-2 uppercase tracking-tighter">Drone</th>
+                    <th className="text-left font-black text-slate-400 pb-2 pr-2 uppercase tracking-tighter">Task</th>
+                    <th className="text-left font-black text-slate-400 pb-2 uppercase tracking-tighter text-right">Battery</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {gridDrones.length > 0
-                    ? gridDrones.map((d) => (
-                        <tr key={d.id} className="border-b border-slate-50">
-                          <td className="py-1.5 pr-2 font-black text-blue-600">{d.name}</td>
-                          <td className={cn(
-                            "py-1.5 pr-2 font-bold uppercase",
-                            d.status === "idle" ? "text-slate-400" : "text-emerald-600"
-                          )}>
-                            {d.status}
-                          </td>
-                          <td className="py-1.5 text-slate-500 font-mono">
-                            ({Math.round(d.current_x)},{Math.round(d.current_y)})
-                          </td>
-                        </tr>
-                      ))
-                    : ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO"].map((name, i) => (
-                        <tr key={name} className="border-b border-slate-50">
-                          <td className="py-1.5 pr-2 font-black text-blue-600">{name}</td>
-                          <td className={cn("py-1.5 pr-2 font-bold uppercase", i === 4 ? "text-red-500" : "text-slate-400")}>
-                            {i === 4 ? "OFFLINE" : "IDLE"}
-                          </td>
-                          <td className="py-1.5 text-slate-400 font-mono">(0,0)</td>
-                        </tr>
-                      ))}
+                  {gridDrones.length > 0 ? (
+                    gridDrones.map((d) => (
+                      <tr key={d.id} className="border-b border-slate-50 last:border-0">
+                        <td className="py-2 pr-2 font-black text-blue-600">{d.name}</td>
+                        <td className={cn(
+                          "py-2 pr-2 font-bold uppercase tracking-tighter",
+                          d.status === "idle" ? "text-slate-400" : "text-emerald-600"
+                        )}>
+                          {d.status}
+                        </td>
+                        <td className="py-2 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className={cn("h-full", d.battery > 50 ? "bg-emerald-500" : d.battery > 20 ? "bg-amber-500" : "bg-red-500")}
+                                style={{ width: `${d.battery}%` }}
+                              />
+                            </div>
+                            <span className="font-black text-slate-700 tabular-nums">{d.battery}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan={3} className="py-8 text-center text-slate-400 font-bold italic">No active drones in grid</td></tr>
+                  )}
                 </tbody>
               </table>
-            </div>
-            <div className="mt-2 pt-2 border-t border-slate-100 text-[9px] text-slate-400 flex items-center gap-1">
-              <span className="font-bold">VERSION:</span> v8.0.2
             </div>
           </div>
 
           {/* Active Sorties */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              Active Sorties
+              Mission Status
             </h3>
-            <div className="text-[10px]">
-              <div className="flex justify-between py-1 border-b border-slate-100 font-black text-slate-400">
-                <span>SCENARIO</span>
-                <span>STATE</span>
-              </div>
-              <div className="flex justify-between py-2 items-center">
-                <span className="font-bold text-slate-600">{scenario.toUpperCase()}</span>
-                <Badge className={cn(
-                  "text-[9px] font-black px-2 py-0.5",
-                  isDeployed ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                )}>
-                  {isDeployed ? "ACTIVE" : "STANDBY"}
-                </Badge>
-              </div>
+            <div className="flex justify-between items-center py-2 bg-slate-50 rounded-lg px-3 border border-slate-100">
+              <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{scenario}</span>
+              <Badge className={cn(
+                "text-[10px] font-black px-2 py-0.5",
+                isDeployed ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+              )}>
+                {isDeployed ? "ACTIVE" : "STANDBY"}
+              </Badge>
             </div>
           </div>
 
           {/* Live Activity Log */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex-1">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <Terminal className="w-3.5 h-3.5 text-blue-500" /> Live Activity Log
-              <div className="ml-auto flex items-center gap-1">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Terminal className="w-3.5 h-3.5 text-blue-500" /> Live Activity Log
+              </h3>
+              <div className="flex items-center gap-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9px] text-emerald-600 font-black">LIVE</span>
+                <span className="text-[10px] text-emerald-600 font-black">SYNCED</span>
               </div>
-            </h3>
-            <div className="h-48 overflow-y-auto space-y-1.5 pr-1">
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {logs.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center gap-2 text-center">
-                  <p className="text-[10px] text-slate-400 font-medium">No mission activity recorded.</p>
-                  <p className="text-[10px] text-blue-500 font-bold cursor-pointer hover:underline"
-                    onClick={handleDeploy}>
-                    Start deployment to begin.
-                  </p>
+                <div className="h-full flex flex-col items-center justify-center gap-2 text-center py-10 opacity-50">
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Awaiting deployment telemetry...</p>
                 </div>
               ) : (
-                logs.slice(-20).reverse().map((log) => (
+                logs.slice(-30).reverse().map((log) => (
                   <div key={log.id} className={cn(
-                    "text-[9px] font-mono px-2 py-1 rounded-lg border",
+                    "text-[10px] font-mono px-2 py-1.5 rounded border leading-relaxed",
                     log.type === "success" && "bg-emerald-50 border-emerald-100 text-emerald-700",
                     log.type === "warning" && "bg-amber-50 border-amber-100 text-amber-700",
                     log.type === "system" && "bg-slate-50 border-slate-100 text-slate-600",
                     log.type === "ai" && "bg-blue-50 border-blue-100 text-blue-700",
                     log.type === "info" && "bg-slate-50 border-slate-100 text-slate-600",
                   )}>
-                    <span className="text-slate-400">[{log.timestamp}]</span> {log.message}
+                    <span className="text-slate-400 font-bold opacity-70">[{log.timestamp}]</span> {log.message}
                   </div>
                 ))
               )}

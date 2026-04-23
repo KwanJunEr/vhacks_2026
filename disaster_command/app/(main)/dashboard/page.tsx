@@ -133,14 +133,14 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Fleet & Battery Row */}
-      <div className="w-full">
-        <FleetDistribution />
-      </div>
-
-      {/* Operations Log */}
+      {/* Operations Log - Column Data */}
       <div className="w-full">
         <CriticalAlertsLog />
+      </div>
+
+      {/* Fleet & Battery Row - Moved Lower */}
+      <div className="w-full h-[600px] py-6">
+        <FleetDistribution />
       </div>
 
       {/* Secondary Operational Row */}

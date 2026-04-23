@@ -39,6 +39,6 @@ aiosqlite
 # ----------------------------
 mcp
 fastmcp
-fastapi-mcp 
+anthropic
 
 uv 

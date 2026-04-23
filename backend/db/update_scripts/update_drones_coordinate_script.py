@@ -11,20 +11,25 @@ def update_drone_positions():
     conn = connect()
     cursor = conn.cursor()
 
-    # 🧠 Safe 20x20 grid positions (no conflict with entities)
+    GRID_SIZE = 20
+
+    # 🌍 Strategic positions: North, South, West, East, Center
     fixed_positions = [
-        (0, 0),
-        (3, 12),
-        (6, 1),
-        (12, 8),
-        (19, 10)
+        (GRID_SIZE // 2, 0),                # North (top middle)
+        (GRID_SIZE // 2, GRID_SIZE - 1),    # South (bottom middle)
+        (0, GRID_SIZE // 2),                # West (left middle)
+        (GRID_SIZE - 1, GRID_SIZE // 2),    # East (right middle)
+        (GRID_SIZE // 2, GRID_SIZE // 2),   # Center
     ]
 
-    # Get all drones ordered by id (1–5 expected)
+    # Get all drones ordered by id
     cursor.execute("SELECT id FROM drones ORDER BY id ASC")
     drones = cursor.fetchall()
 
     for i, drone in enumerate(drones):
+        if i >= len(fixed_positions):
+            break  # Safety check if more drones exist
+
         drone_id = drone[0]
         x, y = fixed_positions[i]
 
@@ -42,4 +47,4 @@ def update_drone_positions():
 
 if __name__ == "__main__":
     update_drone_positions()
-    print("✅ Drone positions updated on 20x20 grid")
+    print("✅ Drone positions updated (North, South, East, West, Center)")

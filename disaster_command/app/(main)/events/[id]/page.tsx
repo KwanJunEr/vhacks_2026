@@ -597,6 +597,15 @@ export default function EventDetailPage({
             </div>
           </div>
 
+          <Link href="/logs">
+            <Button
+              variant="outline"
+              className="h-11 px-5 rounded-xl border-slate-200 hover:bg-slate-50 text-slate-600 font-black uppercase tracking-widest text-[10px] gap-2 shadow-sm"
+            >
+              <Terminal className="w-4 h-4 text-blue-500" /> Logs & Report
+            </Button>
+          </Link>
+
           {!isDeployed ? (
             <Button
               onClick={handleDeploy}
@@ -847,10 +856,10 @@ export default function EventDetailPage({
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Terminal className="w-3.5 h-3.5 text-blue-500" /> Live Activity Log
               </h3>
-              <div className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] text-emerald-600 font-black">SYNCED</span>
-              </div>
+              <Link href="/logs" className="text-[10px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest flex items-center gap-1 group">
+                Full Logs
+                <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </div>
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
               {logs.length === 0 ? (

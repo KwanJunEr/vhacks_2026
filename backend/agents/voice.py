@@ -1,37 +1,34 @@
 import os
-from elevenlabs import generate, play, set_api_key
+import openai
 from typing import Dict, Any
 from agents.mcp_client import MCPClient
 
 class VoiceAgent:
-    """Agent responsible for voice output using ElevenLabs."""
-    
+    """Agent responsible for voice output using OpenAI TTS."""
+
     def __init__(self, mcp_client: MCPClient):
         self.mcp_client = mcp_client
-        self.api_key = os.getenv("ELEVENLABS_API_KEY")
-        if self.api_key:
-            set_api_key(self.api_key)
+        api_key = os.getenv("OPEN_API_KEY")
+        self.client = openai.OpenAI(api_key=api_key) if api_key else None
 
-    def speak(self, text: str):
-        """Convert text to speech and log reasoning."""
+    def speak(self, text: str) -> Dict[str, Any]:
+        """Convert text to speech using OpenAI TTS."""
         self.mcp_client.log_reasoning(
             "Voice Agent",
             f"Generating voice output: {text}",
             "voice_output"
         )
-        
-        if not self.api_key:
+
+        if not self.client:
             print(f"VOICE (no API key): {text}")
             return {"status": "success", "mode": "text_only", "output": text}
 
         try:
-            audio = generate(
-                text=text,
-                voice="Bella",
-                model="eleven_monolingual_v1"
+            self.client.audio.speech.create(
+                model="tts-1",
+                voice="alloy",
+                input=text,
             )
-            # In a real system, we'd stream this or play it. 
-            # For now, we'll just return a success message.
             return {"status": "success", "mode": "voice", "output": text}
         except Exception as e:
             print(f"Voice generation failed: {e}")

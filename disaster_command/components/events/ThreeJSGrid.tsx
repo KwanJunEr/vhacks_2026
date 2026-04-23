@@ -39,9 +39,17 @@ interface HoverData {
   rows: { label: string; value: string; color?: string }[];
 }
 
+export interface VisitedCell {
+  x: number;
+  y: number;
+  scanned_by: string;
+  drone_color: string;
+}
+
 interface ThreeJSGridProps {
   drones: GridDrone[];
   entities: GridEntity[];
+  visitedCells?: VisitedCell[];
   rotationState?: {
     isRotating: boolean;
     direction: 1 | -1;
@@ -59,8 +67,9 @@ function gridToWorld(gx: number, gy: number): [number, number] {
 }
 
 function droneToWorld(cx: number, cy: number): [number, number] {
-  const gx = Math.min(19, Math.max(0, Math.round((cx / 100) * 19)));
-  const gy = Math.min(19, Math.max(0, Math.round((cy / 100) * 19)));
+  // current_x / current_y are stored as 0-19 grid coordinates
+  const gx = Math.min(19, Math.max(0, Math.round(cx)));
+  const gy = Math.min(19, Math.max(0, Math.round(cy)));
   return gridToWorld(gx, gy);
 }
 
@@ -74,13 +83,27 @@ const DRONE_HEX: Record<string, string> = {
 
 // ─── Grid Floor ───────────────────────────────────────────────────────────────
 
-function GridFloor() {
+const VISITED_COLORS: Record<string, string> = {
+  red: "#7f1d1d",
+  blue: "#1e3a8a",
+  green: "#14532d",
+  yellow: "#713f12",
+  purple: "#3b0764",
+};
+
+function GridFloor({ visitedCells = [] }: { visitedCells?: VisitedCell[] }) {
+  const visitedMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    visitedCells.forEach((c) => { m[`${c.x}-${c.y}`] = c.drone_color || "blue"; });
+    return m;
+  }, [visitedCells]);
+
   const tiles = useMemo(() => {
-    const arr: { key: string; x: number; z: number; even: boolean }[] = [];
+    const arr: { key: string; x: number; z: number; even: boolean; gx: number; gy: number }[] = [];
     for (let r = 0; r < GRID; r++) {
       for (let c = 0; c < GRID; c++) {
         const [wx, wz] = gridToWorld(c, r);
-        arr.push({ key: `${r}-${c}`, x: wx, z: wz, even: (r + c) % 2 === 0 });
+        arr.push({ key: `${r}-${c}`, x: wx, z: wz, even: (r + c) % 2 === 0, gx: c, gy: r });
       }
     }
     return arr;
@@ -88,32 +111,40 @@ function GridFloor() {
 
   return (
     <group>
-      {tiles.map(({ key, x, z, even }) => (
-        <mesh key={key} position={[x, 0, z]} receiveShadow>
-          <boxGeometry args={[CELL, 0.04, CELL]} />
-          <meshStandardMaterial
-            color={even ? "#1e293b" : "#0f172a"}
-            roughness={0.85}
-            metalness={0.15}
-            emissive={even ? "#1e3a5f" : "#0a1628"}
-            emissiveIntensity={0.08}
-          />
-        </mesh>
-      ))}
-      {/* Visible white cell lines */}
-      <gridHelper
-        args={[GRID * CELL, GRID, "#ffffff", "#8899cc"]}
-        position={[0, 0.03, 0]}
-      />
-      {/* White boundary frame — 4 perimeter edges */}
+      {tiles.map(({ key, x, z, even, gx, gy }) => {
+        const visitColor = visitedMap[`${gx}-${gy}`];
+        const baseColor = visitColor
+          ? (VISITED_COLORS[visitColor] ?? "#1e3a8a")
+          : (even ? "#1e293b" : "#0f172a");
+        const emissive = visitColor
+          ? (VISITED_COLORS[visitColor] ?? "#1e3a8a")
+          : (even ? "#1e3a5f" : "#0a1628");
+        const emissiveIntensity = visitColor ? 0.45 : 0.08;
+
+        return (
+          <mesh key={key} position={[x, 0, z]} receiveShadow>
+            <boxGeometry args={[CELL, 0.04, CELL]} />
+            <meshStandardMaterial
+              color={baseColor}
+              roughness={0.85}
+              metalness={0.15}
+              emissive={emissive}
+              emissiveIntensity={emissiveIntensity}
+            />
+          </mesh>
+        );
+      })}
+      {/* Grid lines */}
+      <gridHelper args={[GRID * CELL, GRID, "#ffffff", "#8899cc"]} position={[0, 0.03, 0]} />
+      {/* White boundary frame */}
       {([-HALF, HALF] as number[]).map((z) => (
         <mesh key={`hedge-${z}`} position={[0, 0.04, z]}>
           <boxGeometry args={[GRID * CELL + 0.1, 0.02, 0.07]} />
           <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.5} />
         </mesh>
       ))}
-      {([-HALF, HALF] as number[]).map((x) => (
-        <mesh key={`vedge-${x}`} position={[x, 0.04, 0]}>
+      {([-HALF, HALF] as number[]).map((xv) => (
+        <mesh key={`vedge-${xv}`} position={[xv, 0.04, 0]}>
           <boxGeometry args={[0.07, 0.02, GRID * CELL + 0.1]} />
           <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={2.5} />
         </mesh>
@@ -702,10 +733,11 @@ function SupplyRequestMarker({
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
 function Scene({
-  drones, entities, onHover, rotationState, onRotationEnd,
+  drones, entities, visitedCells, onHover, rotationState, onRotationEnd,
 }: {
   drones: GridDrone[];
   entities: GridEntity[];
+  visitedCells?: VisitedCell[];
   onHover: (data: HoverData | null) => void;
   rotationState?: { isRotating: boolean; direction: 1 | -1 };
   onRotationEnd?: () => void;
@@ -723,7 +755,7 @@ function Scene({
       }
 
       const current = controlsRef.current.getAzimuthalAngle();
-      const diff = targetRotation.current - current;
+      const diff = (targetRotation.current ?? current) - current;
 
       if (Math.abs(diff) > 0.01) {
         // Smoothly interpolate to target
@@ -761,7 +793,7 @@ function Scene({
       <pointLight position={[9, 4, 9]} intensity={0.5} color="#0c2d6e" />
       <pointLight position={[0, 3, 0]} intensity={0.25} color="#60a5fa" />
 
-      <GridFloor />
+      <GridFloor visitedCells={visitedCells} />
       <AxisLabels />
 
       {entities.map((ent) => {
@@ -927,7 +959,7 @@ export function GridLegend() {
 
 // ─── Public Component ─────────────────────────────────────────────────────────
 
-export function ThreeJSGrid({ drones, entities, rotationState, onRotationEnd }: ThreeJSGridProps & { onRotationEnd?: () => void }) {
+export function ThreeJSGrid({ drones, entities, visitedCells, rotationState, onRotationEnd }: ThreeJSGridProps & { onRotationEnd?: () => void }) {
   const [hovered, setHovered] = useState<HoverData | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -944,10 +976,11 @@ export function ThreeJSGrid({ drones, entities, rotationState, onRotationEnd }: 
         gl={{ antialias: true, alpha: false }}
       >
         <Suspense fallback={null}>
-          <Scene 
-            drones={drones} 
-            entities={entities} 
-            onHover={handleHover} 
+          <Scene
+            drones={drones}
+            entities={entities}
+            visitedCells={visitedCells}
+            onHover={handleHover}
             rotationState={rotationState}
             onRotationEnd={onRotationEnd}
           />

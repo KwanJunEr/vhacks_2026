@@ -21,9 +21,17 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { GridDrone, GridEntity } from "./ThreeJSGrid";
 
+interface VisitedCell {
+  x: number;
+  y: number;
+  scanned_by: string;
+  drone_color: string;
+}
+
 interface DroneGrid2DProps {
   drones: GridDrone[];
   entities: GridEntity[];
+  visitedCells?: VisitedCell[];
 }
 
 const GRID_SIZE = 20;
@@ -106,22 +114,35 @@ export function GridLegend2D() {
   );
 }
 
-export function DroneGrid2D({ drones, entities }: DroneGrid2DProps) {
+const VISITED_BG: Record<string, string> = {
+  red: "bg-red-950/60",
+  blue: "bg-blue-950/60",
+  green: "bg-green-950/60",
+  yellow: "bg-yellow-900/60",
+  purple: "bg-purple-950/60",
+};
+
+export function DroneGrid2D({ drones, entities, visitedCells = [] }: DroneGrid2DProps) {
   const [hoveredCell, setHoveredCell] = useState<{ x: number, y: number } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.2, 3));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.2, 0.5));
-  const handleResetView = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  };
+  const handleResetView = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
+
+  // Build visited lookup: "x-y" → drone_color
+  const visitedMap = React.useMemo(() => {
+    const m: Record<string, string> = {};
+    visitedCells.forEach((c) => { m[`${c.x}-${c.y}`] = c.drone_color || "blue"; });
+    return m;
+  }, [visitedCells]);
 
   const getDronesAt = (x: number, y: number) => {
+    // current_x/current_y are 0-19 grid coordinates
     return drones.filter(d => {
-      const gx = Math.min(19, Math.max(0, Math.round((d.current_x / 100) * 19)));
-      const gy = Math.min(19, Math.max(0, Math.round((d.current_y / 100) * 19)));
+      const gx = Math.min(19, Math.max(0, Math.round(d.current_x)));
+      const gy = Math.min(19, Math.max(0, Math.round(d.current_y)));
       return gx === x && gy === y;
     });
   };
@@ -204,14 +225,20 @@ export function DroneGrid2D({ drones, entities }: DroneGrid2DProps) {
             const entitiesHere = getEntitiesAt(x, y);
             const isHovered = hoveredCell?.x === x && hoveredCell?.y === y;
 
+            const visitColor = visitedMap[`${x}-${y}`];
+
             return (
               <div
                 key={i}
                 onMouseEnter={() => setHoveredCell({ x, y })}
                 onMouseLeave={() => setHoveredCell(null)}
                 className={cn(
-                  "relative bg-white flex items-center justify-center transition-colors duration-200",
-                  isHovered ? "bg-blue-50" : "hover:bg-slate-50"
+                  "relative flex items-center justify-center transition-colors duration-200",
+                  isHovered
+                    ? "bg-blue-100"
+                    : visitColor
+                      ? (VISITED_BG[visitColor] ?? "bg-blue-950/60")
+                      : "bg-white hover:bg-slate-50"
                 )}
                 style={{ aspectRatio: "1/1" }}
               >

@@ -5,6 +5,10 @@ numpy>=1.24.0
 python-dotenv>=1.0.0
 
 fastapi
+elevenlabs
+langchain-anthropic
+langchain-openai
+python-dotenv
 uvicorn
 httpx
 pydantic

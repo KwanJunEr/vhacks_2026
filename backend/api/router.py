@@ -6,6 +6,7 @@ from api.drones.router import router as drones_router
 from api.rag.routes import router as rag_router
 from api.disaster_events.routes import router as disaster_events_router
 from api.entities.router import router as entities_router
+from api.missions.router import router as missions_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -17,3 +18,4 @@ api_router.include_router(computer_vision_router)
 api_router.include_router(rag_router)
 api_router.include_router(disaster_events_router)
 api_router.include_router(entities_router)
+api_router.include_router(missions_router)

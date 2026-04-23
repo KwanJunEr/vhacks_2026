@@ -18,6 +18,7 @@ import {
   Search,
   Activity,
   BrainCircuit,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserDropdown } from "@/components/login/UserDropdown";
@@ -29,6 +30,7 @@ const navigation = [
   { name: "Computer Vision", href: "/computer-vision", icon: BrainCircuit },
   { name: "Predictive", href: "/analytics", icon: BarChart3 },
   { name: "Knowledge", href: "/resources", icon: BookOpenText },
+  { name: "AI Logs", href:"/logs", icon: Activity},
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
